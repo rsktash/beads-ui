@@ -1,0 +1,133 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Background layers */
+    --bg-base: #FDFBF7;
+    --bg-surface: #F8F5EF;
+    --bg-elevated: #FFFFFF;
+    --bg-hover: #F5F0E8;
+    --bg-overlay: rgba(0,0,0,0.4);
+
+    /* Text */
+    --text-primary: #1A1A1A;
+    --text-secondary: #6B6B6B;
+    --text-tertiary: #9CA3AF;
+    --text-inverse: #FAFAF9;
+
+    /* Borders */
+    --border-subtle: rgba(0,0,0,0.06);
+    --border-default: rgba(0,0,0,0.1);
+
+    /* Accent */
+    --accent: #16A34A;
+    --accent-soft: rgba(22,163,74,0.1);
+
+    /* Status */
+    --status-open: #3B82F6;
+    --status-in-progress: #F59E0B;
+    --status-blocked: #EF4444;
+    --status-closed: #22C55E;
+
+    /* Priority */
+    --priority-0: #EF4444;
+    --priority-1: #F97316;
+    --priority-2: #3B82F6;
+    --priority-3: #22C55E;
+    --priority-4: #D1D5DB;
+
+    /* Type */
+    --type-task: #16A34A;
+    --type-bug: #EF4444;
+    --type-feature: #6366F1;
+    --type-epic: #7C3AED;
+    --type-chore: #78716C;
+
+    /* Spacing (4px grid) */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 20px;
+    --space-6: 24px;
+    --space-8: 32px;
+    --space-10: 40px;
+    --space-12: 48px;
+    --space-16: 64px;
+
+    /* Radius */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 14px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-card: 0 1px 3px rgba(0,0,0,0.04), 0 0 0 1px rgba(0,0,0,0.03);
+    --shadow-md: 0 4px 12px rgba(0,0,0,0.06);
+
+    /* Transitions */
+    --transition-fast: 120ms ease;
+    --transition-medium: 200ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  body {
+    font-family: 'DM Sans', system-ui, -apple-system, sans-serif;
+    background: var(--bg-base);
+    color: var(--text-primary);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+}
+
+/* IssueCard styles */
+.issue-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  box-shadow: var(--shadow-card);
+  transition: box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.issue-card:hover {
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.issue-card--dimmed {
+  opacity: 0.6;
+}
+
+/* Skeleton shimmer */
+.skeleton-shimmer {
+  background: linear-gradient(
+    90deg,
+    var(--bg-hover) 25%,
+    var(--bg-elevated) 50%,
+    var(--bg-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+@keyframes shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.issue-card__handle {
+  opacity: 0;
+  transition: opacity 120ms ease;
+}
+
+.issue-card:hover .issue-card__handle {
+  opacity: 0.6;
+}

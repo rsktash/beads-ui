@@ -1,0 +1,19 @@
+#!/usr/bin/env node
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const serverDir = resolve(__dirname, "..");
+
+// Set static dir for serving the Vite build output
+process.env.BEADS_UI_STATIC = resolve(serverDir, "dist");
+
+// Default to port 3333 to avoid conflicts with common dev servers on 3000
+if (!process.env.PORT) {
+  process.env.PORT = "3333";
+}
+
+// Preserve the caller's working directory — the server uses cwd() to
+// resolve the beads database, so we must NOT chdir.
+
+import("../server/index.js");
