@@ -3,6 +3,18 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { codeToHtml } from "shiki";
 
+const ATTACHMENT_BASE_URL = (
+  import.meta.env.VITE_FILE_ATTACHMENT_BASE_URL || ""
+).replace(/\/$/, "");
+
+function resolveAttachments(md: string): string {
+  if (!ATTACHMENT_BASE_URL) return md;
+  return md.replace(
+    /attach:\/\/([^\s)]+)/g,
+    (_, path) => `${ATTACHMENT_BASE_URL}/${path}`,
+  );
+}
+
 export function Markdown({ content }: { content: string }) {
   const [html, setHtml] = useState("");
 
@@ -15,7 +27,8 @@ export function Markdown({ content }: { content: string }) {
     let cancelled = false;
 
     async function render() {
-      const tokens = marked.lexer(content);
+      const resolved = resolveAttachments(content);
+      const tokens = marked.lexer(resolved);
 
       // Collect code blocks for syntax highlighting
       const codeBlocks: Array<{ code: string; lang: string }> = [];
