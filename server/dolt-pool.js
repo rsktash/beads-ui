@@ -19,13 +19,22 @@ let serverProcess = null;
 /** @type {string | null} */
 let currentDataDir = null;
 
+/** @type {'embedded' | 'server' | null} */
+let currentMode = null;
+
 /**
- * Resolve the Dolt data directory from the workspace root.
- * Walks up from cwd to find .beads/metadata.json, then checks for
- * embeddeddolt/<database>/ structure.
+ * @typedef {{ mode: 'embedded', dataDir: string, database: string }} EmbeddedDoltInfo
+ * @typedef {{ mode: 'server', host: string, port: number, user: string, password: string, database: string }} ServerDoltInfo
+ * @typedef {EmbeddedDoltInfo | ServerDoltInfo} DoltInfo
+ */
+
+/**
+ * Resolve Dolt connection info from the workspace root.
+ * Walks up from cwd to find .beads/metadata.json, then returns either
+ * embedded or server connection info depending on dolt_mode.
  *
  * @param {string} cwd
- * @returns {{ dataDir: string, database: string } | null}
+ * @returns {DoltInfo | null}
  */
 export function resolveDoltDir(cwd) {
   const metadataPath = findNearestBeadsMetadata(cwd);
@@ -42,6 +51,18 @@ export function resolveDoltDir(cwd) {
   if (metadata.backend !== 'dolt' && metadata.database !== 'dolt') return null;
 
   const database = metadata.dolt_database || 'default';
+
+  if (metadata.dolt_mode === 'server') {
+    return {
+      mode: 'server',
+      host: metadata.dolt_server_host || '127.0.0.1',
+      port: metadata.dolt_server_port || 3306,
+      user: metadata.dolt_server_user || 'root',
+      password: process.env.BEADS_DOLT_PASSWORD || '',
+      database
+    };
+  }
+
   const dataDir = path.join(beadsDir, 'embeddeddolt', database);
 
   try {
@@ -50,7 +71,7 @@ export function resolveDoltDir(cwd) {
     return null;
   }
 
-  return { dataDir, database };
+  return { mode: 'embedded', dataDir, database };
 }
 
 /**
@@ -67,6 +88,34 @@ export async function startDoltServer(cwd) {
     return null;
   }
 
+  // Server mode — connect directly, no child process
+  if (resolved.mode === 'server') {
+    const { host, port, user, password, database } = resolved;
+
+    // Already connected to this server
+    if (pool && currentMode === 'server') {
+      return pool;
+    }
+
+    await stopDoltServer();
+
+    log('connecting to remote dolt server at %s:%d (database=%s)', host, port, database);
+    currentMode = 'server';
+
+    try {
+      pool = await createPool({ host, port, user, password, database });
+      log('connected to remote dolt server at %s:%d', host, port);
+      ensureIndexes(pool).catch((err) => log('ensureIndexes error: %o', err));
+      return pool;
+    } catch (err) {
+      log('failed to connect to remote dolt server: %o', err);
+      pool = null;
+      currentMode = null;
+      return null;
+    }
+  }
+
+  // Embedded mode — spawn local dolt sql-server
   const { dataDir, database } = resolved;
 
   // Already running for this data dir
@@ -83,6 +132,7 @@ export async function startDoltServer(cwd) {
   try { fs.unlinkSync(DOLT_SOCK); } catch { /* ignore */ }
 
   currentDataDir = dataDir;
+  currentMode = 'embedded';
 
   return new Promise((resolve) => {
     const child = spawn('dolt', [
@@ -119,6 +169,7 @@ export async function startDoltServer(cwd) {
       pool = null;
       serverProcess = null;
       currentDataDir = null;
+      currentMode = null;
       if (!resolved_already) {
         resolved_already = true;
         resolve(null);
@@ -144,7 +195,7 @@ export async function startDoltServer(cwd) {
         return;
       }
       try {
-        const p = await createPool(database);
+        const p = await createPool({ host: '127.0.0.1', port: DOLT_PORT, user: 'root', database });
         clearInterval(pollInterval);
         if (!resolved_already) {
           resolved_already = true;
@@ -169,15 +220,16 @@ export async function startDoltServer(cwd) {
 /**
  * Create a mysql2 connection pool.
  *
- * @param {string} database
+ * @param {{ host: string, port: number, user: string, password?: string, database: string }} opts
  * @returns {Promise<import('mysql2/promise').Pool>}
  */
-async function createPool(database) {
+async function createPool(opts) {
   const p = mysql.createPool({
-    host: '127.0.0.1',
-    port: DOLT_PORT,
-    user: 'root',
-    database,
+    host: opts.host,
+    port: opts.port,
+    user: opts.user,
+    password: opts.password || undefined,
+    database: opts.database,
     waitForConnections: true,
     connectionLimit: 10,
     queueLimit: 50,
@@ -236,6 +288,7 @@ export async function stopDoltServer() {
     serverProcess = null;
   }
   currentDataDir = null;
+  currentMode = null;
 }
 
 /**
@@ -250,7 +303,10 @@ export async function rebindDoltServer(cwd) {
     await stopDoltServer();
     return null;
   }
-  if (resolved.dataDir === currentDataDir && pool && serverProcess && !serverProcess.killed) {
+  if (resolved.mode === 'server' && pool && currentMode === 'server') {
+    return pool;
+  }
+  if (resolved.mode === 'embedded' && resolved.dataDir === currentDataDir && pool && serverProcess && !serverProcess.killed) {
     return pool;
   }
   return startDoltServer(cwd);
