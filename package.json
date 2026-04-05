@@ -6,6 +6,12 @@
     "url": "https://github.com/rsktash/beads-ui.git"
   },
   "type": "module",
+  "files": [
+    "bin/",
+    "server/",
+    "app/",
+    "dist/"
+  ],
   "bin": {
     "bd-ui": "bin/bd-ui"
   },
