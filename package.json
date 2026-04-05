@@ -1,8 +1,10 @@
 {
   "name": "beads-ui",
   "version": "0.1.0",
-  "private": true,
   "type": "module",
+  "bin": {
+    "bdui": "bin/bdui"
+  },
   "scripts": {
     "dev": "concurrently \"vite --config client/vite.config.ts\" \"node server/index.js\"",
     "build": "vite build --config client/vite.config.ts",
