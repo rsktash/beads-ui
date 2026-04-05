@@ -2,7 +2,7 @@ import type { Config } from "tailwindcss";
 import path from "path";
 import typography from "@tailwindcss/typography";
 
-const clientDir = path.resolve(import.meta.dirname);
+const clientDir = __dirname;
 
 export default {
   content: [
