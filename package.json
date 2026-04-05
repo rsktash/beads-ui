@@ -7,7 +7,7 @@
   },
   "type": "module",
   "bin": {
-    "bdui": "bin/bdui"
+    "bd-ui": "bin/bd-ui"
   },
   "scripts": {
     "dev": "concurrently \"vite --config client/vite.config.ts\" \"node server/index.js\"",
