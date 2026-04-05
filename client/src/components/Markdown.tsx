@@ -3,15 +3,25 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { codeToHtml } from "shiki";
 
-const ATTACHMENT_BASE_URL = (
-  import.meta.env.VITE_FILE_ATTACHMENT_BASE_URL || ""
-).replace(/\/$/, "");
+let _attachmentBaseUrl: string | null = null;
 
-function resolveAttachments(md: string): string {
-  if (!ATTACHMENT_BASE_URL) return md;
+async function getAttachmentBaseUrl(): Promise<string> {
+  if (_attachmentBaseUrl !== null) return _attachmentBaseUrl;
+  try {
+    const res = await fetch("/api/config");
+    const data = await res.json();
+    _attachmentBaseUrl = data.fileAttachmentBaseUrl || "";
+  } catch {
+    _attachmentBaseUrl = "";
+  }
+  return _attachmentBaseUrl;
+}
+
+function resolveAttachments(md: string, baseUrl: string): string {
+  if (!baseUrl) return md;
   return md.replace(
     /attach:\/\/([^\s)]+)/g,
-    (_, path) => `${ATTACHMENT_BASE_URL}/${path}`,
+    (_, path) => `${baseUrl}/${path}`,
   );
 }
 
@@ -27,7 +37,8 @@ export function Markdown({ content }: { content: string }) {
     let cancelled = false;
 
     async function render() {
-      const resolved = resolveAttachments(content);
+      const baseUrl = await getAttachmentBaseUrl();
+      const resolved = resolveAttachments(content, baseUrl);
       const tokens = marked.lexer(resolved);
 
       // Collect code blocks for syntax highlighting

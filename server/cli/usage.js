@@ -24,7 +24,7 @@ export function printUsage(out_stream) {
     '  PORT                          Server port (default: 3333)',
     '  HOST                          Bind address (default: 127.0.0.1)',
     '  BEADS_DOLT_PASSWORD            Password for remote Dolt server',
-    '  VITE_FILE_ATTACHMENT_BASE_URL  Base URL for attach:// URIs in markdown',
+    '  FILE_ATTACHMENT_BASE_URL  Base URL for attach:// URIs in markdown',
     '',
     'Dolt modes:',
     '  Embedded (default): spawns a local dolt sql-server from .beads/embeddeddolt/',
@@ -34,9 +34,9 @@ export function printUsage(out_stream) {
     '',
     'Attachments:',
     '  Markdown content can use attach://<path> URIs for portable file references.',
-    '  Set VITE_FILE_ATTACHMENT_BASE_URL to resolve them at render time.',
+    '  Set FILE_ATTACHMENT_BASE_URL to resolve them at render time.',
     '  Example: attach://bead-42/shot.png becomes',
-    '    ${VITE_FILE_ATTACHMENT_BASE_URL}/bead-42/shot.png',
+    '    ${FILE_ATTACHMENT_BASE_URL}/bead-42/shot.png',
     ''
   ];
   for (const line of lines) {

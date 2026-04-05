@@ -60,6 +60,14 @@ export function createApp(config) {
     res.status(200).json({ ok: true, workspaces });
   });
 
+  // Runtime config for the client
+  app.get('/api/config', (_req, res) => {
+    res.status(200).json({
+      ok: true,
+      fileAttachmentBaseUrl: (process.env.FILE_ATTACHMENT_BASE_URL || '').replace(/\/$/, '')
+    });
+  });
+
   if (
     !fs.statSync(path.resolve(config.app_dir, 'main.bundle.js'), {
       throwIfNoEntry: false

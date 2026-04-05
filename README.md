@@ -41,7 +41,7 @@ bd-ui start
 | `PORT`                          | Server port                                  | `3333`      |
 | `HOST`                          | Bind address                                 | `127.0.0.1` |
 | `BEADS_DOLT_PASSWORD`           | Password for remote Dolt server connection   |             |
-| `VITE_FILE_ATTACHMENT_BASE_URL` | Base URL for resolving `attach://` URIs      |             |
+| `FILE_ATTACHMENT_BASE_URL` | Base URL for resolving `attach://` URIs      |             |
 
 ## Dolt Database Modes
 
@@ -88,10 +88,10 @@ Markdown content supports a custom `attach://` URI scheme for portable file refe
 [Log file](attach://bead-42/log.txt)
 ```
 
-At render time, `attach://` URIs are resolved against `VITE_FILE_ATTACHMENT_BASE_URL`:
+At render time, `attach://` URIs are resolved against `FILE_ATTACHMENT_BASE_URL`:
 
 ```bash
-VITE_FILE_ATTACHMENT_BASE_URL=https://files.example.com/attachments bd-ui start
+FILE_ATTACHMENT_BASE_URL=https://files.example.com/attachments bd-ui start
 ```
 
 The above markdown resolves to:
