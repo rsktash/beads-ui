@@ -81,6 +81,98 @@ function buildPagination(pagination) {
 }
 
 /**
+ * Enrich list items with parent_title, children counts, and blocked_by.
+ * Runs batch queries to avoid N+1.
+ *
+ * @param {Array<Record<string, unknown>>} items
+ * @returns {Promise<Array<Record<string, unknown>>>}
+ */
+export async function enrichListItems(items) {
+  const pool = getPool();
+  if (!pool || items.length === 0) return items;
+
+  const ids = items.map(i => i.id);
+
+  try {
+    // Batch: resolve parent IDs from dependencies table
+    /** @type {Map<string, string>} */
+    const parentIdMap = new Map();
+    const [parentDepRows] = await pool.query(
+      `SELECT issue_id, depends_on_id FROM dependencies
+       WHERE type = 'parent-child' AND issue_id IN (${ids.map(() => '?').join(',')})`,
+      ids
+    );
+    for (const r of /** @type {any[]} */ (parentDepRows)) {
+      parentIdMap.set(r.issue_id, r.depends_on_id);
+    }
+
+    // Batch: parent titles
+    const parentIds = [...new Set(parentIdMap.values())];
+    /** @type {Map<string, string>} */
+    const parentTitles = new Map();
+    if (parentIds.length > 0) {
+      const [rows] = await pool.query(
+        `SELECT id, title FROM issues WHERE id IN (${parentIds.map(() => '?').join(',')})`,
+        parentIds
+      );
+      for (const r of /** @type {any[]} */ (rows)) parentTitles.set(r.id, r.title);
+    }
+
+    // Batch: children counts
+    const [childRows] = await pool.query(
+      `SELECT depends_on_id AS pid, COUNT(*) AS total,
+              SUM(CASE WHEN i.status = 'closed' THEN 1 ELSE 0 END) AS closed
+       FROM dependencies d JOIN issues i ON i.id = d.issue_id
+       WHERE d.type = 'parent-child' AND d.depends_on_id IN (${ids.map(() => '?').join(',')})
+       GROUP BY d.depends_on_id`,
+      ids
+    );
+    /** @type {Map<string, { total: number, closed: number }>} */
+    const childCounts = new Map();
+    for (const r of /** @type {any[]} */ (childRows)) {
+      childCounts.set(r.pid, { total: Number(r.total), closed: Number(r.closed) });
+    }
+
+    // Batch: blocked by (issues that block each item)
+    const [blockRows] = await pool.query(
+      `SELECT d.issue_id, d.depends_on_id, i.title AS blocker_title
+       FROM dependencies d JOIN issues i ON i.id = d.depends_on_id
+       WHERE d.type = 'blocks' AND d.issue_id IN (${ids.map(() => '?').join(',')})
+         AND i.status != 'closed'`,
+      ids
+    );
+    /** @type {Map<string, Array<{ id: string, title: string }>>} */
+    const blockedBy = new Map();
+    for (const r of /** @type {any[]} */ (blockRows)) {
+      if (!blockedBy.has(r.issue_id)) blockedBy.set(r.issue_id, []);
+      blockedBy.get(r.issue_id).push({ id: r.depends_on_id, title: r.blocker_title });
+    }
+
+    return items.map(item => {
+      const enriched = { ...item };
+      const pid = parentIdMap.get(/** @type {string} */ (enriched.id));
+      if (pid) {
+        enriched.parent_id = pid;
+        if (parentTitles.has(pid)) enriched.parent_title = parentTitles.get(pid);
+      }
+      const cc = childCounts.get(/** @type {string} */ (enriched.id));
+      if (cc) {
+        enriched.total_children = cc.total;
+        enriched.closed_children = cc.closed;
+      }
+      const bb = blockedBy.get(/** @type {string} */ (enriched.id));
+      if (bb && bb.length > 0) {
+        enriched.blocked_by = bb;
+      }
+      return enriched;
+    });
+  } catch (err) {
+    log('enrichListItems error: %o', err);
+    return items;
+  }
+}
+
+/**
  * Fetch total count for a WHERE clause.
  *
  * @param {import('mysql2/promise').Pool} pool
