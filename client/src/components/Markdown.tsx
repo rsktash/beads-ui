@@ -66,10 +66,10 @@ function resolveIssueMentions(md: string): string {
 const issueCache = new Map<string, Issue>();
 
 const statusColors: Record<string, { bg: string; text: string }> = {
-  open: { bg: "#dbeafe", text: "#1d4ed8" },
-  in_progress: { bg: "#fef3c7", text: "#b45309" },
-  blocked: { bg: "#fee2e2", text: "#dc2626" },
-  closed: { bg: "#e5e7eb", text: "#4b5563" },
+  open: { bg: "rgba(38,139,210,0.12)", text: "#268bd2" },
+  in_progress: { bg: "rgba(181,137,0,0.12)", text: "#b58900" },
+  blocked: { bg: "rgba(220,50,47,0.12)", text: "#dc322f" },
+  closed: { bg: "rgba(133,153,0,0.12)", text: "#859900" },
 };
 
 function extractSection(issue: Issue, fragment: string | undefined): string {
@@ -281,7 +281,7 @@ export function Markdown({ content }: { content: string }) {
           try {
             return await codeToHtml(block.code, {
               lang: block.lang,
-              theme: "github-light",
+              theme: "solarized-light",
             });
           } catch {
             return `<pre><code>${DOMPurify.sanitize(block.code)}</code></pre>`;
@@ -315,11 +315,27 @@ export function Markdown({ content }: { content: string }) {
     <>
       <div
         ref={containerRef}
-        className="prose prose-stone prose-sm max-w-none
-          prose-pre:bg-stone-50 prose-pre:border prose-pre:border-stone-200 prose-pre:rounded
+        className="prose prose-sm max-w-none
+          prose-pre:rounded prose-pre:border
           prose-code:text-sm prose-code:font-mono
-          prose-headings:font-semibold prose-headings:text-stone-900
-          prose-a:text-blue-600 prose-a:no-underline hover:prose-a:underline"
+          prose-headings:font-semibold
+          prose-a:no-underline hover:prose-a:underline"
+        style={{
+          "--tw-prose-body": "var(--text-secondary)",
+          "--tw-prose-headings": "var(--text-primary)",
+          "--tw-prose-links": "#268bd2",
+          "--tw-prose-bold": "var(--text-primary)",
+          "--tw-prose-counters": "var(--text-tertiary)",
+          "--tw-prose-bullets": "var(--text-tertiary)",
+          "--tw-prose-hr": "var(--border-default)",
+          "--tw-prose-quotes": "var(--text-secondary)",
+          "--tw-prose-quote-borders": "var(--border-default)",
+          "--tw-prose-code": "var(--text-primary)",
+          "--tw-prose-pre-bg": "var(--bg-surface)",
+          "--tw-prose-pre-code": "var(--text-primary)",
+          "--tw-prose-th-borders": "var(--border-default)",
+          "--tw-prose-td-borders": "var(--border-subtle)",
+        } as React.CSSProperties}
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {preview && (

@@ -91,7 +91,7 @@ export function Login() {
           {error && (
             <div
               className="mb-4 text-sm px-3 py-2 rounded-md"
-              style={{ background: "#fee2e2", color: "#dc2626" }}
+              style={{ background: "rgba(220,50,47,0.12)", color: "#dc322f" }}
             >
               {error}
             </div>
