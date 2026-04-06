@@ -36,20 +36,44 @@ bd-ui start
 
 ## Environment Variables
 
-| Variable                        | Description                                  | Default     |
-|---------------------------------|----------------------------------------------|-------------|
-| `PORT`                          | Server port                                  | `3333`      |
-| `HOST`                          | Bind address                                 | `127.0.0.1` |
-| `BEADS_DOLT_PASSWORD`           | Password for remote Dolt server connection   |             |
+| Variable                   | Description                                  | Default     |
+|----------------------------|----------------------------------------------|-------------|
+| `PORT`                     | Server port                                  | `3333`      |
+| `HOST`                     | Bind address                                 | `127.0.0.1` |
+| `BEADS_DOLT_PASSWORD`      | Password for remote Dolt server connection   |             |
 | `FILE_ATTACHMENT_BASE_URL` | Base URL for resolving `attach://` URIs      |             |
+| `BEADS_UI_AUTH_FILE`       | Path to users JSON file for authentication   |             |
+
+## Authentication
+
+Auth is optional. When `BEADS_UI_AUTH_FILE` points to a valid users file, login is required. When not set, auth is bypassed entirely.
+
+### Users file format
+
+```json
+{
+  "users": [
+    { "username": "alice", "password": "secret", "role": "Developer" },
+    { "username": "bob", "password": "guest", "role": "Viewer" }
+  ]
+}
+```
+
+### Running with auth
+
+```bash
+BEADS_UI_AUTH_FILE=/path/to/users.json bd-ui start
+```
+
+Session tokens are stored in the browser's localStorage and kept in server memory. Tokens are invalidated on server restart.
 
 ## Dolt Database Modes
 
-beads-ui supports two Dolt connection modes, configured via `.beads/metadata.json`:
+Two Dolt connection modes, configured via `.beads/metadata.json`:
 
 ### Embedded (default)
 
-Spawns a local `dolt sql-server` from `.beads/embeddeddolt/`. No extra configuration needed.
+Spawns a local `dolt sql-server` from `.beads/embeddeddolt/`.
 
 ```json
 {
@@ -60,7 +84,7 @@ Spawns a local `dolt sql-server` from `.beads/embeddeddolt/`. No extra configura
 
 ### Remote Server
 
-Connects to an external Dolt server. Set `dolt_mode` to `"server"` in metadata.json:
+Connects to an external Dolt server:
 
 ```json
 {
@@ -69,52 +93,66 @@ Connects to an external Dolt server. Set `dolt_mode` to `"server"` in metadata.j
   "dolt_server_host": "127.0.0.1",
   "dolt_server_port": 3308,
   "dolt_server_user": "root",
-  "dolt_database": "yuklar"
+  "dolt_database": "mydb"
 }
 ```
-
-Password is read from the `BEADS_DOLT_PASSWORD` environment variable:
 
 ```bash
 BEADS_DOLT_PASSWORD=secret bd-ui start
 ```
 
-## Attachments
+## Docker
 
-Markdown content supports a custom `attach://` URI scheme for portable file references. Instead of hardcoding full URLs, store references like:
+```yaml
+services:
+  beads-ui:
+    image: ghcr.io/rsktash/beads-ui:latest
+    ports:
+      - "3333:3333"
+    volumes:
+      - /path/to/workspace:/workspace
+    working_dir: /workspace
+    environment:
+      - HOST=0.0.0.0
+      - BEADS_DOLT_PASSWORD=secret
+      - BEADS_UI_AUTH_FILE=/workspace/.beads/users.json
+      - FILE_ATTACHMENT_BASE_URL=https://files.example.com/attachments
+```
+
+Images published to `ghcr.io/rsktash/beads-ui` on version tags via GitHub Actions.
+
+## Markdown Features
+
+### Attachments
+
+`attach://` URIs for portable file references, resolved against `FILE_ATTACHMENT_BASE_URL`:
 
 ```md
 ![Screenshot](attach://bead-42/screenshot.png)
-[Log file](attach://bead-42/log.txt)
 ```
 
-At render time, `attach://` URIs are resolved against `FILE_ATTACHMENT_BASE_URL`:
+### Issue Mentions
 
-```bash
-FILE_ATTACHMENT_BASE_URL=https://files.example.com/attachments bd-ui start
-```
-
-The above markdown resolves to:
-
-```
-https://files.example.com/attachments/bead-42/screenshot.png
-https://files.example.com/attachments/bead-42/log.txt
-```
-
-Normal `http(s)://` URLs in markdown are rendered as-is.
-
-This keeps bead content portable across environments (local dev, staging, production) without rewriting markdown.
-
-## Issue Mentions
-
-Reference other issues in markdown using `#issue-id`:
+`#issue-id` auto-links to the issue detail page:
 
 ```md
-See #yuklar-985 for the original audit.
-Depends on #yuklar-eb2 and #yuklar-g57.
+See #proj-a1b for details. Depends on #proj-c3d.
 ```
 
-These are automatically rendered as clickable links to the issue detail page. Mentions inside existing links or code blocks are left unchanged.
+### Deep Linking
+
+Sections and headings get unique element IDs for fragment linking:
+
+- Predefined sections: `#description`, `#acceptance-criteria`, `#notes`, `#design`
+- Content headings: auto-slugified (e.g., `## My Heading` → `#my-heading`)
+
+```md
+[see details](/detail/proj-a1b#my-heading)
+```
+
+### Theme
+
+Solarized Light color palette with matching syntax highlighting.
 
 ## License
 
