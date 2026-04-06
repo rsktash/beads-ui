@@ -9,6 +9,7 @@ import { isRequest, makeError, makeOk } from '../app/protocol.js';
 import { isAuthEnabled, verifyToken } from './auth.js';
 import { getGitUserName, runBd, runBdJson } from './bd.js';
 import { resolveWorkspaceDatabase } from './db.js';
+import { rebindDoltServer } from './dolt-pool.js';
 import {
   addComment,
   addDependency,
@@ -615,14 +616,20 @@ export function attachWsServer(http_server, options = {}) {
         DB_WATCHER.rebind({ root_dir: resolved_root });
       }
 
-      // Clear existing registry entries and refresh all subscriptions
+      // Clear existing registry entries
       registry.clear();
 
       // Broadcast workspace-changed event to all clients
       broadcast('workspace-changed', CURRENT_WORKSPACE);
 
-      // Schedule refresh of all active list subscriptions
-      scheduleListRefresh();
+      // Rebind the Dolt SQL pool THEN refresh subscriptions
+      rebindDoltServer(resolved_root).then((pool) => {
+        log('Dolt pool rebound for %s: %s', resolved_root, pool ? 'connected' : 'unavailable');
+        scheduleListRefresh();
+      }).catch((err) => {
+        log('rebindDoltServer error: %o', err);
+        scheduleListRefresh();
+      });
     }
 
     return { changed, workspace: CURRENT_WORKSPACE };
