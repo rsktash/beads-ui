@@ -230,17 +230,25 @@ export function Markdown({ content }: { content: string }) {
     setPreview(null);
   }, []);
 
+  const dismissPreview = useCallback(() => {
+    clearTimeout(hoverTimer.current);
+    setPreview(null);
+  }, []);
+
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     el.addEventListener("mouseover", handleMouseOver);
     el.addEventListener("mouseout", handleMouseOut);
+    // Dismiss on scroll from any scrollable ancestor
+    window.addEventListener("scroll", dismissPreview, true);
     return () => {
       el.removeEventListener("mouseover", handleMouseOver);
       el.removeEventListener("mouseout", handleMouseOut);
+      window.removeEventListener("scroll", dismissPreview, true);
       clearTimeout(hoverTimer.current);
     };
-  }, [handleMouseOver, handleMouseOut]);
+  }, [handleMouseOver, handleMouseOut, dismissPreview]);
 
   useEffect(() => {
     if (!content) {
