@@ -3,6 +3,7 @@ import { useSubscription } from "../hooks/use-subscription";
 import { useSearch } from "../hooks/use-search";
 import { StatusBadge } from "./StatusBadge";
 import { PriorityBadge } from "./PriorityBadge";
+import { navigate } from "./Layout";
 
 export function SearchDialog() {
   const [open, setOpen] = useState(false);
@@ -49,7 +50,7 @@ export function SearchDialog() {
       setSelectedIndex((i) => Math.max(i - 1, 0));
     }
     if (e.key === "Enter" && shown[selectedIndex]) {
-      window.location.hash = `#/detail/${shown[selectedIndex].id}`;
+      navigate(`/detail/${shown[selectedIndex].id}`;
       setOpen(false);
       setQuery("");
     }
@@ -102,7 +103,7 @@ export function SearchDialog() {
             <button
               key={issue.id}
               onClick={() => {
-                window.location.hash = `#/detail/${issue.id}`;
+                navigate(`/detail/${issue.id}`;
                 setOpen(false);
                 setQuery("");
               }}

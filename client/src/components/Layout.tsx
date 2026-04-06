@@ -1,20 +1,26 @@
 import { useState, useEffect, type ReactNode } from "react";
 import { useWs } from "../lib/ws-context";
 
-function useHashRoute(): string {
-  const [hash, setHash] = useState(window.location.hash || "#/board");
+function useRoute(): string {
+  const [path, setPath] = useState(window.location.pathname || "/board");
   useEffect(() => {
-    const handler = () => setHash(window.location.hash || "#/board");
-    window.addEventListener("hashchange", handler);
-    return () => window.removeEventListener("hashchange", handler);
+    const handler = () => setPath(window.location.pathname || "/board");
+    window.addEventListener("popstate", handler);
+    return () => window.removeEventListener("popstate", handler);
   }, []);
-  return hash;
+  return path;
+}
+
+export function navigate(path: string) {
+  window.history.pushState(null, "", path);
+  window.dispatchEvent(new PopStateEvent("popstate"));
 }
 
 function NavLink({ href, label, icon, active }: { href: string; label: string; icon: ReactNode; active: boolean }) {
   return (
     <a
       href={href}
+      onClick={(e) => { e.preventDefault(); navigate(href); }}
       className="flex items-center gap-2.5 px-3 py-2 rounded-md text-sm transition-colors"
       style={{
         background: active ? "var(--bg-hover)" : "transparent",
@@ -59,7 +65,22 @@ export function Layout({
 }: {
   children: (route: string) => ReactNode;
 }) {
-  const route = useHashRoute();
+  const route = useRoute();
+
+  // Intercept internal link clicks to use pushState
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      const link = (e.target as HTMLElement).closest?.("a[href]") as HTMLAnchorElement | null;
+      if (!link) return;
+      const href = link.getAttribute("href");
+      if (!href || !href.startsWith("/") || href.startsWith("//")) return;
+      if (e.metaKey || e.ctrlKey || e.shiftKey) return;
+      e.preventDefault();
+      navigate(href);
+    };
+    document.addEventListener("click", handler);
+    return () => document.removeEventListener("click", handler);
+  }, []);
   const ws = useWs();
   const [projectName, setProjectName] = useState("");
 
@@ -129,16 +150,16 @@ export function Layout({
         {/* Nav links */}
         <div className="px-2 space-y-0.5">
           <NavLink
-            href="#/board"
+            href="/board"
             label="Board"
             icon={<BoardIcon />}
-            active={route.startsWith("#/board") || route === "" || route === "#/" || route === "#"}
+            active={route.startsWith("/board") || route === "/"}
           />
           <NavLink
-            href="#/list"
+            href="/list"
             label="List"
             icon={<ListIcon />}
-            active={route.startsWith("#/list")}
+            active={route.startsWith("/list")}
           />
         </div>
 

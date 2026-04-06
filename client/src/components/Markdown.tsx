@@ -42,7 +42,7 @@ const renderer = {
     const id = slugify(text);
     const linked = text.replace(
       /#([a-z0-9]+-[a-z0-9]+)/gi,
-      (_, issueId) => `<a href="#/detail/${issueId}">#${issueId}</a>`,
+      (_, issueId) => `<a href="/detail/${issueId}">#${issueId}</a>`,
     );
     return `<h${depth} id="${id}">${linked}</h${depth}>`;
   },
@@ -57,7 +57,7 @@ function resolveIssueMentions(md: string): string {
       if (/^\s*#{1,6}\s/.test(line)) return line;
       return line.replace(
         /(?<![[\w/])#([a-z0-9]+-[a-z0-9]+)(?![(\]\w])/gi,
-        (_, id) => `[#${id}](#/detail/${id})`,
+        (_, id) => `[#${id}](/detail/${id})`,
       );
     })
     .join("\n");
@@ -72,15 +72,52 @@ const statusColors: Record<string, { bg: string; text: string }> = {
   closed: { bg: "#e5e7eb", text: "#4b5563" },
 };
 
-function IssuePreview({ issue, style }: { issue: Issue; style: React.CSSProperties }) {
+function extractSection(issue: Issue, fragment: string | undefined): string {
+  if (!fragment) {
+    const d = issue.description || "";
+    const clean = d.replace(/[#*`\[\]]/g, "").trim();
+    return clean.slice(0, 120) + (clean.length > 120 ? "..." : "");
+  }
+  // Check section-level fields first
+  const sectionFields: Record<string, string | undefined> = {
+    description: issue.description,
+    "acceptance-criteria": issue.acceptance,
+    notes: issue.notes,
+    design: issue.design,
+  };
+  if (sectionFields[fragment]) {
+    const clean = sectionFields[fragment]!.replace(/[#*`\[\]]/g, "").trim();
+    return clean.slice(0, 150) + (clean.length > 150 ? "..." : "");
+  }
+  // Search for a heading matching the fragment in all markdown fields
+  for (const field of [issue.description, issue.acceptance, issue.notes, issue.design]) {
+    if (!field) continue;
+    const lines = field.split("\n");
+    for (let i = 0; i < lines.length; i++) {
+      const headingMatch = lines[i].match(/^#{1,6}\s+(.+)/);
+      if (!headingMatch) continue;
+      if (slugify(headingMatch[1]) === fragment) {
+        // Collect content under this heading until the next heading or end
+        const content: string[] = [];
+        for (let j = i + 1; j < lines.length; j++) {
+          if (/^#{1,6}\s/.test(lines[j])) break;
+          content.push(lines[j]);
+        }
+        const clean = content.join(" ").replace(/[#*`\[\]]/g, "").trim();
+        return clean.slice(0, 150) + (clean.length > 150 ? "..." : "");
+      }
+    }
+  }
+  return "";
+}
+
+function IssuePreview({ issue, fragment, style }: { issue: Issue; fragment?: string; style: React.CSSProperties }) {
   const colors = statusColors[issue.status] || statusColors.open;
   const date = new Date(issue.updated_at).toLocaleDateString("en-US", {
     month: "short",
     day: "numeric",
   });
-  const desc = issue.description
-    ? issue.description.replace(/[#*`\[\]]/g, "").slice(0, 120) + (issue.description.length > 120 ? "..." : "")
-    : "";
+  const desc = extractSection(issue, fragment);
 
   return (
     <div
@@ -95,6 +132,12 @@ function IssuePreview({ issue, style }: { issue: Issue; style: React.CSSProperti
       <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border-subtle)" }}>
         <div className="flex items-center gap-1.5 text-xs mb-1.5" style={{ color: "var(--text-tertiary)" }}>
           <span>{issue.id}</span>
+          {fragment && (
+            <>
+              <span>·</span>
+              <span style={{ color: "var(--accent)" }}>{fragment}</span>
+            </>
+          )}
           <span>·</span>
           <span>{date}</span>
         </div>
@@ -149,16 +192,18 @@ function IssuePreview({ issue, style }: { issue: Issue; style: React.CSSProperti
 
 export function Markdown({ content }: { content: string }) {
   const [html, setHtml] = useState("");
-  const [preview, setPreview] = useState<{ issue: Issue; x: number; y: number } | null>(null);
+  const [preview, setPreview] = useState<{ issue: Issue; fragment?: string; x: number; y: number } | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const hoverTimer = useRef<ReturnType<typeof setTimeout>>();
   const ws = useWs();
 
   const handleMouseOver = useCallback(
     (e: MouseEvent) => {
-      const link = (e.target as HTMLElement).closest?.("a[href*='#/detail/']") as HTMLAnchorElement | null;
+      const link = (e.target as HTMLElement).closest?.("a[href*='/detail/']") as HTMLAnchorElement | null;
       if (!link) return;
-      const match = link.getAttribute("href")?.match(/#\/detail\/(.+)/);
+      const href = link.getAttribute("href") || "";
+      const [path, fragment] = href.split("#");
+      const match = path.match(/\/detail\/(.+)/);
       if (!match) return;
       const id = match[1];
 
@@ -171,7 +216,7 @@ export function Markdown({ content }: { content: string }) {
         }
         if (issue) {
           const rect = link.getBoundingClientRect();
-          setPreview({ issue, x: rect.left, y: rect.bottom + 6 });
+          setPreview({ issue, fragment, x: rect.left, y: rect.bottom + 6 });
         }
       }, 300);
     },
@@ -179,7 +224,7 @@ export function Markdown({ content }: { content: string }) {
   );
 
   const handleMouseOut = useCallback((e: MouseEvent) => {
-    const link = (e.target as HTMLElement).closest?.("a[href*='#/detail/']");
+    const link = (e.target as HTMLElement).closest?.("a[href*='/detail/']");
     if (!link) return;
     clearTimeout(hoverTimer.current);
     setPreview(null);
@@ -270,7 +315,7 @@ export function Markdown({ content }: { content: string }) {
         dangerouslySetInnerHTML={{ __html: html }}
       />
       {preview && (
-        <IssuePreview issue={preview.issue} style={{ left: preview.x, top: preview.y }} />
+        <IssuePreview issue={preview.issue} fragment={preview.fragment} style={{ left: preview.x, top: preview.y }} />
       )}
     </>
   );

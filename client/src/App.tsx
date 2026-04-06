@@ -11,17 +11,12 @@ export function App() {
       <SearchDialog />
       <Layout>
         {(route) => {
-          if (route.startsWith("#/detail/")) {
-            const id = route.replace("#/detail/", "");
+          if (route.startsWith("/detail/")) {
+            const id = route.replace("/detail/", "");
             return <Detail key={id} issueId={id} />;
           }
-          if (route.startsWith("#/list")) return <List />;
-          if (
-            route.startsWith("#/board") ||
-            route === "" ||
-            route === "#/" ||
-            route === "#"
-          )
+          if (route.startsWith("/list")) return <List />;
+          if (route.startsWith("/board") || route === "/")
             return <Board />;
           return (
             <div className="p-6 text-stone-400">

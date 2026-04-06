@@ -2,6 +2,7 @@ import { useMemo, useState, useRef, useEffect } from "react";
 import { useSubscription } from "../hooks/use-subscription";
 import { IssueCard } from "../components/IssueCard";
 import type { SubscriptionType } from "../lib/types";
+import { navigate } from "../components/Layout";
 
 const COLUMN_PAGE_SIZE = 20;
 
@@ -152,7 +153,7 @@ export function Board() {
   const { total: totalEpics } = useSubscription("epics", { limit: 1, offset: 0 });
 
   const navigateToDetail = (id: string) => {
-    window.location.hash = `#/detail/${id}`;
+    navigate(`/detail/${id}`);
   };
 
   return (

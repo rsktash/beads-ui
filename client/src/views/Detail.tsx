@@ -7,6 +7,7 @@ import { TypeBadge } from "../components/TypeBadge";
 import { SectionEditor } from "../components/SectionEditor";
 import { getInitials, getAvatarColor } from "../lib/avatar";
 import type { Issue } from "../lib/types";
+import { navigate } from "../components/Layout";
 
 function MetadataCard({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -136,7 +137,7 @@ function MetadataSidebar({
       {parentId && (
         <MetadataCard label="Parent">
           <a
-            href={`#/detail/${parentId}`}
+            href={`/detail/${parentId}`}
             className="block rounded px-1 py-1 -mx-1 transition-colors"
             style={{ color: "var(--text-primary)" }}
             onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; }}
@@ -167,7 +168,7 @@ function MetadataSidebar({
               {blocksDeps.map((dep: any) => (
                 <a
                   key={dep.depends_on_id}
-                  href={`#/detail/${dep.depends_on_id}`}
+                  href={`/detail/${dep.depends_on_id}`}
                   className="block text-xs font-mono px-1 py-0.5 transition-colors"
                   style={{ color: "var(--accent)" }}
                   onMouseEnter={(e) => { e.currentTarget.style.textDecoration = "underline"; }}
@@ -188,7 +189,7 @@ function MetadataSidebar({
             {issue.dependents.map((dep) => (
               <a
                 key={dep.id}
-                href={`#/detail/${dep.id}`}
+                href={`/detail/${dep.id}`}
                 className="block text-xs rounded px-1 py-1.5 -mx-1 transition-colors"
                 onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; }}
                 onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
@@ -288,7 +289,7 @@ export function Detail({ issueId }: { issueId: string }) {
         {/* Breadcrumbs */}
         <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
           <a
-            href="#/list"
+            href="/list"
             className="flex items-center gap-1 transition-colors"
             style={{ color: "var(--text-tertiary)" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
@@ -372,7 +373,7 @@ export function Detail({ issueId }: { issueId: string }) {
               {issue.dependents.map((child) => (
                 <a
                   key={child.id}
-                  href={`#/detail/${child.id}`}
+                  href={`/detail/${child.id}`}
                   className="flex items-center gap-2.5 px-2 py-2 rounded-md transition-colors"
                   style={{ opacity: child.status === "closed" ? 0.6 : 1 }}
                   onMouseEnter={(e) => { e.currentTarget.style.background = "var(--bg-hover)"; }}

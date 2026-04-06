@@ -114,12 +114,8 @@ export function createApp(config) {
   const staticDir = process.env.BEADS_UI_STATIC || config.app_dir;
   app.use(express.static(staticDir));
 
-  // Root serves index.html explicitly (even if static would catch it)
-  /**
-   * @param {Request} _req
-   * @param {Response} res
-   */
-  app.get('/', (_req, res) => {
+  // SPA catch-all — serve index.html for all non-API, non-static routes
+  app.get('*', (_req, res) => {
     const index_path = path.join(staticDir, 'index.html');
     res.sendFile(index_path);
   });

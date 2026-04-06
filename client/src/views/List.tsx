@@ -3,6 +3,7 @@ import { useSubscription } from "../hooks/use-subscription";
 import { StatusBadge } from "../components/StatusBadge";
 import { PriorityBadge } from "../components/PriorityBadge";
 import { TypeBadge } from "../components/TypeBadge";
+import { navigate } from "../components/Layout";
 import { getInitials, getAvatarColor } from "../lib/avatar";
 import type { Issue } from "../lib/types";
 
@@ -334,7 +335,7 @@ export function List() {
         setSelectedIndex((i) => Math.min(i + 1, paginatedIssues.length - 1));
       if (e.key === "k") setSelectedIndex((i) => Math.max(i - 1, -1));
       if (e.key === "Enter" && paginatedIssues[selectedIndex]) {
-        window.location.hash = `#/detail/${paginatedIssues[selectedIndex].id}`;
+        navigate(`/detail/${paginatedIssues[selectedIndex].id}`;
       }
     };
     window.addEventListener("keydown", handler);
@@ -439,7 +440,7 @@ export function List() {
                 selected={index === selectedIndex}
                 onClick={() => {
                   setSelectedIndex(index);
-                  window.location.hash = `#/detail/${issue.id}`;
+                  navigate(`/detail/${issue.id}`;
                 }}
               />
             ))
