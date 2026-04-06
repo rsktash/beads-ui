@@ -105,6 +105,17 @@ Normal `http(s)://` URLs in markdown are rendered as-is.
 
 This keeps bead content portable across environments (local dev, staging, production) without rewriting markdown.
 
+## Issue Mentions
+
+Reference other issues in markdown using `#issue-id`:
+
+```md
+See #yuklar-985 for the original audit.
+Depends on #yuklar-eb2 and #yuklar-g57.
+```
+
+These are automatically rendered as clickable links to the issue detail page. Mentions inside existing links or code blocks are left unchanged.
+
 ## License
 
 MIT

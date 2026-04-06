@@ -3,18 +3,24 @@ import { marked } from "marked";
 import DOMPurify from "dompurify";
 import { codeToHtml } from "shiki";
 
-let _attachmentBaseUrl: string | null = null;
+let _config: { attachmentBaseUrl: string; projectPrefix: string } | null = null;
 
-async function getAttachmentBaseUrl(): Promise<string> {
-  if (_attachmentBaseUrl !== null) return _attachmentBaseUrl;
+async function getConfig(): Promise<{
+  attachmentBaseUrl: string;
+  projectPrefix: string;
+}> {
+  if (_config) return _config;
   try {
     const res = await fetch("/api/config");
     const data = await res.json();
-    _attachmentBaseUrl = data.fileAttachmentBaseUrl || "";
+    _config = {
+      attachmentBaseUrl: data.fileAttachmentBaseUrl || "",
+      projectPrefix: data.projectPrefix || "",
+    };
   } catch {
-    _attachmentBaseUrl = "";
+    _config = { attachmentBaseUrl: "", projectPrefix: "" };
   }
-  return _attachmentBaseUrl;
+  return _config;
 }
 
 function resolveAttachments(md: string, baseUrl: string): string {
@@ -22,6 +28,13 @@ function resolveAttachments(md: string, baseUrl: string): string {
   return md.replace(
     /attach:\/\/([^\s)]+)/g,
     (_, path) => `${baseUrl}/${path}`,
+  );
+}
+
+function resolveIssueMentions(md: string): string {
+  return md.replace(
+    /(?<![[\w/])#([a-z0-9]+-[a-z0-9]+)(?![(\]\w])/gi,
+    (_, id) => `[#${id}](#/detail/${id})`,
   );
 }
 
@@ -37,8 +50,9 @@ export function Markdown({ content }: { content: string }) {
     let cancelled = false;
 
     async function render() {
-      const baseUrl = await getAttachmentBaseUrl();
-      const resolved = resolveAttachments(content, baseUrl);
+      const cfg = await getConfig();
+      let resolved = resolveAttachments(content, cfg.attachmentBaseUrl);
+      resolved = resolveIssueMentions(resolved);
       const tokens = marked.lexer(resolved);
 
       // Collect code blocks for syntax highlighting

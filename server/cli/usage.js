@@ -37,6 +37,10 @@ export function printUsage(out_stream) {
     '  Set FILE_ATTACHMENT_BASE_URL to resolve them at render time.',
     '  Example: attach://bead-42/shot.png becomes',
     '    ${FILE_ATTACHMENT_BASE_URL}/bead-42/shot.png',
+    '',
+    'Issue mentions:',
+    '  Use #issue-id to mention issues in markdown (e.g., #yuklar-985).',
+    '  These are auto-linked to the issue detail page.',
     ''
   ];
   for (const line of lines) {
