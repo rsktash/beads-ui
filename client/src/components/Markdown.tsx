@@ -65,40 +65,81 @@ function resolveIssueMentions(md: string): string {
 
 const issueCache = new Map<string, Issue>();
 
+const statusColors: Record<string, { bg: string; text: string }> = {
+  open: { bg: "#dbeafe", text: "#1d4ed8" },
+  in_progress: { bg: "#fef3c7", text: "#b45309" },
+  blocked: { bg: "#fee2e2", text: "#dc2626" },
+  closed: { bg: "#e5e7eb", text: "#4b5563" },
+};
+
 function IssuePreview({ issue, style }: { issue: Issue; style: React.CSSProperties }) {
+  const colors = statusColors[issue.status] || statusColors.open;
+  const date = new Date(issue.updated_at).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+  const desc = issue.description
+    ? issue.description.replace(/[#*`\[\]]/g, "").slice(0, 120) + (issue.description.length > 120 ? "..." : "")
+    : "";
+
   return (
     <div
-      className="fixed z-50 rounded-lg shadow-lg text-sm max-w-xs pointer-events-none"
+      className="fixed z-50 rounded-lg shadow-lg pointer-events-none"
       style={{
         ...style,
+        width: "320px",
         background: "var(--bg-elevated)",
         border: "1px solid var(--border-default)",
-        padding: "10px 12px",
       }}
     >
-      <div className="flex items-center gap-2 mb-1">
-        <span
-          className="inline-block w-2 h-2 rounded-full shrink-0"
-          style={{
-            background:
-              issue.status === "closed" ? "#8b8b8b"
-              : issue.status === "in_progress" ? "#f59e0b"
-              : issue.status === "blocked" ? "#ef4444"
-              : "#3b82f6",
-          }}
-        />
-        <span className="font-medium truncate" style={{ color: "var(--text-primary)" }}>
+      <div style={{ padding: "12px 14px", borderBottom: "1px solid var(--border-subtle)" }}>
+        <div className="flex items-center gap-1.5 text-xs mb-1.5" style={{ color: "var(--text-tertiary)" }}>
+          <span>{issue.id}</span>
+          <span>·</span>
+          <span>{date}</span>
+        </div>
+        <div className="font-semibold text-sm mb-2" style={{ color: "var(--text-primary)", lineHeight: 1.3 }}>
           {issue.title}
+        </div>
+        <span
+          className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium"
+          style={{ background: colors.bg, color: colors.text }}
+        >
+          <span
+            className="inline-block w-1.5 h-1.5 rounded-full"
+            style={{ background: colors.text }}
+          />
+          {issue.status.replace("_", " ")}
         </span>
       </div>
-      <div className="flex items-center gap-2 text-xs" style={{ color: "var(--text-tertiary)" }}>
-        <span>{issue.issue_type}</span>
-        <span>·</span>
-        <span>{issue.status.replace("_", " ")}</span>
+      {desc && (
+        <div
+          className="text-xs px-3.5 py-2.5"
+          style={{ color: "var(--text-secondary)", lineHeight: 1.5 }}
+        >
+          {desc}
+        </div>
+      )}
+      <div
+        className="flex items-center gap-2 text-xs px-3.5 py-2"
+        style={{ color: "var(--text-tertiary)", borderTop: "1px solid var(--border-subtle)" }}
+      >
+        <span
+          className="px-1.5 py-0.5 rounded font-mono"
+          style={{ background: "var(--bg-hover)", fontSize: "11px" }}
+        >
+          {issue.issue_type}
+        </span>
         {issue.assignee && (
           <>
             <span>·</span>
             <span>{issue.assignee}</span>
+          </>
+        )}
+        {issue.priority > 0 && (
+          <>
+            <span>·</span>
+            <span>P{issue.priority}</span>
           </>
         )}
       </div>
