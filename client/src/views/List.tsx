@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect, useRef } from "react";
 import { useSubscription } from "../hooks/use-subscription";
+import { CopyId } from "../components/CopyId";
 import { StatusBadge } from "../components/StatusBadge";
 import { PriorityBadge } from "../components/PriorityBadge";
 import { TypeBadge } from "../components/TypeBadge";
@@ -221,8 +222,8 @@ function IssueRow({
         if (!selected) e.currentTarget.style.background = "transparent";
       }}
     >
-      <span className="font-mono text-xs w-36 shrink-0 text-left" style={{ color: "var(--text-tertiary)" }}>
-        {issue.id}
+      <span className="w-36 shrink-0 text-left">
+        <CopyId id={issue.id} className="text-xs" />
       </span>
       <span className="w-28 shrink-0">
         <StatusBadge status={issue.status} />

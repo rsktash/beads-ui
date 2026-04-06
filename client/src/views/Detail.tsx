@@ -7,6 +7,7 @@ import { TypeBadge } from "../components/TypeBadge";
 import { SectionEditor } from "../components/SectionEditor";
 import { getInitials, getAvatarColor } from "../lib/avatar";
 import type { Issue } from "../lib/types";
+import { CopyId } from "../components/CopyId";
 import { navigate } from "../components/Layout";
 
 function MetadataCard({ label, children }: { label: string; children: React.ReactNode }) {
@@ -311,7 +312,7 @@ export function Detail({ issueId }: { issueId: string }) {
             &larr; List
           </a>
           <span>/</span>
-          <span className="font-mono">{issue.id}</span>
+          <CopyId id={issue.id} />
         </div>
 
         {/* Title */}

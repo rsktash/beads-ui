@@ -1,3 +1,4 @@
+import { CopyId } from "./CopyId";
 import { PriorityBadge } from "./PriorityBadge";
 import { TypeBadge } from "./TypeBadge";
 import { getInitials, getAvatarColor } from "../lib/avatar";
@@ -31,12 +32,7 @@ export function IssueCard({
       <div className="px-3.5 py-3">
         {/* Issue ID */}
         <div className="mb-1">
-          <span
-            className="font-mono text-xs"
-            style={{ color: "var(--text-tertiary)" }}
-          >
-            {issue.id}
-          </span>
+          <CopyId id={issue.id} className="text-xs" />
         </div>
 
         {/* Title */}
