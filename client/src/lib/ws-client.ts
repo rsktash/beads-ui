@@ -211,4 +211,23 @@ export class WsClient {
   setWorkspace(path: string, database: string): Promise<unknown> {
     return this.send("set-workspace", { path, database });
   }
+
+  /** One-shot issue fetch: subscribe, wait for snapshot, unsubscribe. */
+  fetchIssue(id: string): Promise<Issue | null> {
+    return new Promise((resolve) => {
+      const subId = `peek-${id}-${Date.now()}`;
+      const cleanup = this.onPush((event) => {
+        if (event.id !== subId || event.type !== "snapshot") return;
+        cleanup();
+        this.unsubscribe(subId);
+        resolve(event.issues[0] ?? null);
+      });
+      this.subscribe({ id: subId, type: "issue-detail", params: { id } });
+      setTimeout(() => {
+        cleanup();
+        this.unsubscribe(subId);
+        resolve(null);
+      }, 3000);
+    });
+  }
 }
