@@ -300,9 +300,10 @@ export function Detail({ issueId }: { issueId: string }) {
     return <div className="p-6" style={{ color: "var(--text-tertiary)" }}>Issue not found</div>;
 
   return (
-    <div className="flex flex-col h-full" style={{ background: "var(--bg-base)" }}>
-      <TableOfContents issue={issue} scrollContainer={scrollRef.current} />
-      <div className="flex flex-1 overflow-hidden">
+    <div className="flex h-full" style={{ background: "var(--bg-base)" }}>
+      <div className="shrink-0 p-6 pr-0 hidden xl:block">
+        <TableOfContents issue={issue} scrollContainer={scrollRef.current} />
+      </div>
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-5">
         {/* Breadcrumbs */}
         <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
@@ -412,7 +413,6 @@ export function Detail({ issueId }: { issueId: string }) {
 
       {/* Metadata sidebar */}
       <MetadataSidebar issue={issue} onUpdate={mutations} />
-      </div>
     </div>
   );
 }
