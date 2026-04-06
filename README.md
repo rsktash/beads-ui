@@ -154,6 +154,29 @@ Sections and headings get unique element IDs for fragment linking:
 
 Solarized Light color palette with matching syntax highlighting.
 
+## CLI Tools
+
+### bd-grep
+
+Grep across beads issue content with snippet output. Uses `bd list` for issue filtering, then greps field content for pattern matches.
+
+```bash
+bd-grep <pattern> [bd-list-flags] [--field fields] [-A N] [-B N] [-C N] [-i] [-l]
+```
+
+Examples:
+
+```bash
+bd-grep "timeline"                              # open issues, description
+bd-grep "timeline" --all                        # include closed
+bd-grep "route" -t epic                         # epics only
+bd-grep "fallback" --field description,design   # multiple fields
+bd-grep "composite" -C2                         # 2 lines context
+bd-grep "trip.id" -l                            # list matching IDs only
+```
+
+Requires `bd` and `jq`.
+
 ## License
 
 MIT

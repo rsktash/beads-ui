@@ -1,0 +1,106 @@
+#!/usr/bin/env bash
+# bd-grep — grep across beads issue content with snippet output
+#
+# Uses `bd list` for issue filtering (all bd list flags pass through),
+# then greps field content for pattern matches with context.
+#
+# Usage:
+#   bd-grep <pattern> [bd-list-flags] [--field fields] [-A N] [-B N] [-C N] [-i] [-l]
+#
+# Examples:
+#   bd-grep "timeline"                              # open issues, description
+#   bd-grep "timeline" --all                        # include closed
+#   bd-grep "route" -t epic                         # epics only
+#   bd-grep "fallback" --field description,design   # multiple fields
+#   bd-grep "composite" -C2                         # 2 lines context
+#   bd-grep "trip.id" -l                            # list matching IDs only
+#   bd-grep "#1" --id yuklar-32p,yuklar-985         # specific issues
+#
+# Output:
+#   yuklar-32p:description:23: matched line text
+
+set -euo pipefail
+
+FIELDS="description"
+AFTER=0
+BEFORE=0
+CASE_FLAG=""
+LIST_ONLY=false
+PATTERN=""
+BD_ARGS=()
+
+args=("$@")
+i=0
+while [ $i -lt ${#args[@]} ]; do
+  arg="${args[$i]}"
+  case "$arg" in
+    --field)      FIELDS="${args[$((i+1))]}"; i=$((i+2)) ;;
+    --field=*)    FIELDS="${arg#--field=}"; i=$((i+1)) ;;
+    -A)           AFTER="${args[$((i+1))]}"; i=$((i+2)) ;;
+    -A[0-9]*)     AFTER="${arg#-A}"; i=$((i+1)) ;;
+    -B)           BEFORE="${args[$((i+1))]}"; i=$((i+2)) ;;
+    -B[0-9]*)     BEFORE="${arg#-B}"; i=$((i+1)) ;;
+    -C)           AFTER="${args[$((i+1))]}"; BEFORE="${args[$((i+1))]}"; i=$((i+2)) ;;
+    -C[0-9]*)     AFTER="${arg#-C}"; BEFORE="${arg#-C}"; i=$((i+1)) ;;
+    -i)           CASE_FLAG="-i"; i=$((i+1)) ;;
+    -l)           LIST_ONLY=true; i=$((i+1)) ;;
+    -*)           BD_ARGS+=("$arg"); i=$((i+1))
+                  if [ $i -lt ${#args[@]} ] && [[ ! "${args[$i]}" == -* ]]; then
+                    BD_ARGS+=("${args[$i]}"); i=$((i+1))
+                  fi ;;
+    *)            if [ -z "$PATTERN" ]; then
+                    PATTERN="$arg"
+                  else
+                    BD_ARGS+=("$arg")
+                  fi
+                  i=$((i+1)) ;;
+  esac
+done
+
+if [ -z "$PATTERN" ]; then
+  echo "Usage: bd-grep <pattern> [bd-list-flags] [--field fields] [-A N] [-B N] [-C N] [-i] [-l]" >&2
+  exit 1
+fi
+
+# Use bd list for issue discovery (all bd flags pass through)
+ISSUES=()
+while IFS= read -r id; do
+  [ -n "$id" ] && ISSUES+=("$id")
+done < <(bd list "${BD_ARGS[@]}" --flat --json 2>/dev/null | jq -r '.[].id')
+
+if [ ${#ISSUES[@]} -eq 0 ]; then
+  echo "No issues found matching filters" >&2
+  exit 1
+fi
+
+IFS=',' read -ra FIELD_ARRAY <<< "$FIELDS"
+
+grep_flags="-n"
+[ -n "$CASE_FLAG" ] && grep_flags="$grep_flags -i"
+[ "$AFTER" -gt 0 ] && grep_flags="$grep_flags -A $AFTER"
+[ "$BEFORE" -gt 0 ] && grep_flags="$grep_flags -B $BEFORE"
+
+found=false
+
+for issue_id in "${ISSUES[@]}"; do
+  json=$(bd show "$issue_id" --json 2>/dev/null) || continue
+
+  for field in "${FIELD_ARRAY[@]}"; do
+    content=$(echo "$json" | jq -r ".[0].${field} // empty")
+    [ -z "$content" ] && continue
+
+    matches=$(echo "$content" | grep $grep_flags -- "$PATTERN" 2>/dev/null) || continue
+    found=true
+
+    if [ "$LIST_ONLY" = true ]; then
+      echo "$issue_id"
+      continue 2
+    fi
+
+    while IFS= read -r line; do
+      echo "$issue_id:$field:$line"
+    done <<< "$matches"
+  done
+done
+
+$found || exit 1
