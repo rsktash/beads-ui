@@ -83,6 +83,13 @@ export function Layout({
   }, []);
   const ws = useWs();
   const [projectName, setProjectName] = useState("");
+  const [appConfig, setAppConfig] = useState<{ version: string; user: string; role: string }>({ version: "", user: "", role: "" });
+
+  useEffect(() => {
+    fetch("/api/config").then(r => r.json()).then(data => {
+      setAppConfig({ version: data.version || "", user: data.user || "", role: data.role || "" });
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     ws.getWorkspace().then((res: any) => {
@@ -166,29 +173,38 @@ export function Layout({
         {/* Spacer */}
         <div className="flex-1" />
 
+        {/* Version */}
+        {appConfig.version && (
+          <div className="px-4 pb-2 text-center">
+            <span style={{ fontSize: "10px", color: "var(--text-tertiary)" }}>v{appConfig.version}</span>
+          </div>
+        )}
+
         {/* User card */}
-        <div
-          className="mx-3 mb-3 px-3 py-2.5 rounded-md flex items-center gap-2.5"
-          style={{
-            border: "1px solid var(--border-subtle)",
-          }}
-        >
+        {appConfig.user && (
           <div
-            className="flex items-center justify-center rounded-full text-xs font-bold shrink-0"
+            className="mx-3 mb-3 px-3 py-2.5 rounded-md flex items-center gap-2.5"
             style={{
-              width: "28px",
-              height: "28px",
-              background: "var(--accent)",
-              color: "white",
+              border: "1px solid var(--border-subtle)",
             }}
           >
-            R
+            <div
+              className="flex items-center justify-center rounded-full text-xs font-bold shrink-0"
+              style={{
+                width: "28px",
+                height: "28px",
+                background: "var(--accent)",
+                color: "white",
+              }}
+            >
+              {appConfig.user.charAt(0).toUpperCase()}
+            </div>
+            <div>
+              <div className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{appConfig.user}</div>
+              {appConfig.role && <div style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>{appConfig.role}</div>}
+            </div>
           </div>
-          <div>
-            <div className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>Rustam</div>
-            <div style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>Developer</div>
-          </div>
-        </div>
+        )}
       </nav>
       <main className="flex-1 overflow-auto">{children(route)}</main>
     </div>

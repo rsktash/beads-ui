@@ -4,6 +4,10 @@
 import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
+
+const require = createRequire(import.meta.url);
+const pkg = require('../package.json');
 import {
   getAvailableWorkspaces,
   registerWorkspace
@@ -64,6 +68,9 @@ export function createApp(config) {
   app.get('/api/config', (_req, res) => {
     res.status(200).json({
       ok: true,
+      version: pkg.version,
+      user: process.env.BEADS_UI_USER || '',
+      role: process.env.BEADS_UI_ROLE || '',
       fileAttachmentBaseUrl: (process.env.FILE_ATTACHMENT_BASE_URL || '').replace(/\/$/, '')
     });
   });
