@@ -440,7 +440,7 @@ export function List() {
                 selected={index === selectedIndex}
                 onClick={() => {
                   setSelectedIndex(index);
-                  navigate(`/detail/${issue.id}`;
+                  navigate(`/detail/${issue.id}`);
                 }}
               />
             ))

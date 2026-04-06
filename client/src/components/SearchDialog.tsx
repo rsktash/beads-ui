@@ -50,7 +50,7 @@ export function SearchDialog() {
       setSelectedIndex((i) => Math.max(i - 1, 0));
     }
     if (e.key === "Enter" && shown[selectedIndex]) {
-      navigate(`/detail/${shown[selectedIndex].id}`;
+      navigate(`/detail/${shown[selectedIndex].id}`);
       setOpen(false);
       setQuery("");
     }
@@ -103,7 +103,7 @@ export function SearchDialog() {
             <button
               key={issue.id}
               onClick={() => {
-                navigate(`/detail/${issue.id}`;
+                navigate(`/detail/${issue.id}`);
                 setOpen(false);
                 setQuery("");
               }}
