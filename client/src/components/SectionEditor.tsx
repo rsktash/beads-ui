@@ -58,6 +58,7 @@ export function SectionEditor({
   if (!editing) {
     return (
       <div
+        id={label.toLowerCase().replace(/\s+/g, "-")}
         className="group rounded-lg p-4"
         style={{
           background: "var(--bg-elevated)",

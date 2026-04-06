@@ -31,6 +31,25 @@ function resolveAttachments(md: string, baseUrl: string): string {
   );
 }
 
+function slugify(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/<[^>]+>/g, "")
+    .replace(/[^\w\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
+    .trim();
+}
+
+const renderer = {
+  heading({ text, depth }: { text: string; depth: number }) {
+    const id = slugify(text);
+    return `<h${depth} id="${id}">${text}</h${depth}>`;
+  },
+};
+
+marked.use({ renderer });
+
 function resolveIssueMentions(md: string): string {
   return md.replace(
     /(?<![[\w/])#([a-z0-9]+-[a-z0-9]+)(?![(\]\w])/gi,
@@ -90,7 +109,7 @@ export function Markdown({ content }: { content: string }) {
 
       const sanitized = DOMPurify.sanitize(rendered, {
         ADD_TAGS: ["span"],
-        ADD_ATTR: ["style", "class"],
+        ADD_ATTR: ["style", "class", "id"],
       });
 
       if (!cancelled) setHtml(sanitized);
