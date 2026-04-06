@@ -40,17 +40,27 @@ function slugify(text: string): string {
 const renderer = {
   heading({ text, depth }: { text: string; depth: number }) {
     const id = slugify(text);
-    return `<h${depth} id="${id}">${text}</h${depth}>`;
+    const linked = text.replace(
+      /#([a-z0-9]+-[a-z0-9]+)/gi,
+      (_, issueId) => `<a href="#/detail/${issueId}">#${issueId}</a>`,
+    );
+    return `<h${depth} id="${id}">${linked}</h${depth}>`;
   },
 };
 
 marked.use({ renderer });
 
 function resolveIssueMentions(md: string): string {
-  return md.replace(
-    /(?<![[\w/])#([a-z0-9]+-[a-z0-9]+)(?![(\]\w])/gi,
-    (_, id) => `[#${id}](#/detail/${id})`,
-  );
+  return md
+    .split("\n")
+    .map((line) => {
+      if (/^\s*#{1,6}\s/.test(line)) return line;
+      return line.replace(
+        /(?<![[\w/])#([a-z0-9]+-[a-z0-9]+)(?![(\]\w])/gi,
+        (_, id) => `[#${id}](#/detail/${id})`,
+      );
+    })
+    .join("\n");
 }
 
 const issueCache = new Map<string, Issue>();
