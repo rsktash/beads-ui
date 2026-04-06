@@ -7,8 +7,18 @@ RUN npm run build
 
 FROM node:22-trixie-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git libicu74 \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends curl ca-certificates git \
+    && apt-get install -y --no-install-recommends 'libicu[0-9]*' \
+    && rm -rf /var/lib/apt/lists/* \
+    && if [ ! -f /usr/lib/x86_64-linux-gnu/libicui18n.so.74 ]; then \
+         actual=$(ls /usr/lib/x86_64-linux-gnu/libicui18n.so.* 2>/dev/null | head -1); \
+         if [ -n "$actual" ]; then \
+           ln -s "$actual" /usr/lib/x86_64-linux-gnu/libicui18n.so.74; \
+           ln -s "$(echo $actual | sed 's/i18n/uc/')" /usr/lib/x86_64-linux-gnu/libicuuc.so.74; \
+           ln -s "$(echo $actual | sed 's/i18n/data/')" /usr/lib/x86_64-linux-gnu/libicudata.so.74; \
+         fi; \
+       fi
 
 ARG BD_VERSION=1.0.0
 RUN curl -fsSL https://github.com/gastownhall/beads/releases/download/v${BD_VERSION}/beads_${BD_VERSION}_linux_amd64.tar.gz \
