@@ -7,8 +7,10 @@ RUN npm run build
 
 FROM node:20-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git libicu72 \
-    && rm -rf /var/lib/apt/lists/*
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git \
+    && apt-get install -y --no-install-recommends libicu72 2>/dev/null \
+    ; apt-get install -y --no-install-recommends libicu74 2>/dev/null \
+    ; rm -rf /var/lib/apt/lists/*
 
 ARG BD_VERSION=1.0.0
 RUN curl -fsSL https://github.com/gastownhall/beads/releases/download/v${BD_VERSION}/beads_${BD_VERSION}_linux_amd64.tar.gz \
