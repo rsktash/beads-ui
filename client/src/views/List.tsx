@@ -335,7 +335,7 @@ export function List() {
         setSelectedIndex((i) => Math.min(i + 1, paginatedIssues.length - 1));
       if (e.key === "k") setSelectedIndex((i) => Math.max(i - 1, -1));
       if (e.key === "Enter" && paginatedIssues[selectedIndex]) {
-        navigate(`/detail/${paginatedIssues[selectedIndex].id}`;
+        navigate(`/detail/${paginatedIssues[selectedIndex].id}`);
       }
     };
     window.addEventListener("keydown", handler);
