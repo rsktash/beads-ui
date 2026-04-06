@@ -30,20 +30,17 @@ export function IssueCard({
       style={{ borderLeft: `3px solid ${borderColor}` }}
     >
       <div className="px-3.5 py-3">
-        {/* Parent issue */}
-        {issue.parent_id && issue.parent_title && (
-          <div
-            className="text-[10px] truncate mb-0.5"
-            style={{ color: "var(--text-tertiary)" }}
-            title={`${issue.parent_id}: ${issue.parent_title}`}
-          >
-            <span style={{ opacity: 0.6 }}>{issue.parent_id}</span>{" "}
-            {issue.parent_title}
-          </div>
-        )}
-
-        {/* Issue ID */}
-        <div className="mb-1">
+        {/* Issue ID + parent breadcrumb */}
+        <div className="flex items-center gap-1 mb-1">
+          {issue.parent_id && (
+            <span
+              className="text-[10px]"
+              style={{ color: "var(--text-tertiary)", opacity: 0.7 }}
+              title={issue.parent_title || issue.parent_id}
+            >
+              {issue.parent_id} ›
+            </span>
+          )}
           <CopyId id={issue.id} className="text-xs" />
         </div>
 
