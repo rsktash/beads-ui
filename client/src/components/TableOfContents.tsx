@@ -92,7 +92,7 @@ export function TableOfContents({
     [],
   );
 
-  if (entries.length < 3) return null;
+  if (entries.length < 2) return null;
 
   return (
     <div
