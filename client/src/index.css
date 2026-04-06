@@ -15,9 +15,9 @@
     --bg-overlay: rgba(0,43,54,0.4);
 
     /* Text — Solarized content tones */
-    --text-primary: #073642;
-    --text-secondary: #586e75;
-    --text-tertiary: #93a1a1;
+    --text-primary: #002b36;
+    --text-secondary: #073642;
+    --text-tertiary: #586e75;
     --text-inverse: #fdf6e3;
 
     /* Borders */
