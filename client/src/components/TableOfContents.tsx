@@ -92,44 +92,43 @@ export function TableOfContents({
     [],
   );
 
-  if (entries.length < 3) return null;
+  // Only show top-level sections (depth 0) in the horizontal bar
+  const topEntries = entries.filter((e) => e.depth === 0);
+  if (topEntries.length < 2) return null;
 
   return (
     <div
-      className="sticky top-6"
-      style={{ width: "180px", maxHeight: "calc(100vh - 48px)", overflowY: "auto" }}
+      className="shrink-0 flex items-center gap-1 px-6 py-2 overflow-x-auto"
+      style={{ borderBottom: "1px solid var(--border-subtle)" }}
     >
-      <div
-        className="text-xs font-semibold uppercase tracking-wider mb-2"
-        style={{ color: "var(--text-tertiary)" }}
-      >
-        On this page
-      </div>
-      <nav className="space-y-0.5">
-        {entries.map((entry) => (
-          <button
-            key={entry.id}
-            onClick={() => handleClick(entry.id)}
-            className="block w-full text-left text-xs truncate rounded px-1.5 py-1 transition-colors bg-transparent border-none cursor-pointer"
-            style={{
-              paddingLeft: `${6 + entry.depth * 10}px`,
-              color: activeId === entry.id ? "var(--accent)" : "var(--text-tertiary)",
-              fontWeight: entry.depth === 0 ? 600 : 400,
-              font: "inherit",
-              fontSize: "12px",
-            }}
-            onMouseEnter={(e) => {
-              if (activeId !== entry.id) e.currentTarget.style.color = "var(--text-secondary)";
-            }}
-            onMouseLeave={(e) => {
-              if (activeId !== entry.id) e.currentTarget.style.color = "var(--text-tertiary)";
-            }}
-            title={entry.label}
-          >
-            {entry.label}
-          </button>
-        ))}
-      </nav>
+      {topEntries.map((entry) => (
+        <button
+          key={entry.id}
+          onClick={() => handleClick(entry.id)}
+          className="shrink-0 text-xs rounded-full px-3 py-1 transition-colors bg-transparent border-none cursor-pointer"
+          style={{
+            color: activeId === entry.id ? "var(--accent)" : "var(--text-tertiary)",
+            background: activeId === entry.id ? "var(--accent-soft)" : "transparent",
+            fontWeight: activeId === entry.id ? 600 : 400,
+            font: "inherit",
+            fontSize: "12px",
+          }}
+          onMouseEnter={(e) => {
+            if (activeId !== entry.id) {
+              e.currentTarget.style.color = "var(--text-secondary)";
+              e.currentTarget.style.background = "var(--bg-hover)";
+            }
+          }}
+          onMouseLeave={(e) => {
+            if (activeId !== entry.id) {
+              e.currentTarget.style.color = "var(--text-tertiary)";
+              e.currentTarget.style.background = "transparent";
+            }
+          }}
+        >
+          {entry.label}
+        </button>
+      ))}
     </div>
   );
 }
