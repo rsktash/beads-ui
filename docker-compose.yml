@@ -1,0 +1,11 @@
+services:
+  beads-ui:
+    image: ghcr.io/rsktash/beads-ui:latest
+    working_dir: /workspace
+    volumes:
+      - ./workspace:/workspace
+    ports:
+      - "3333:3333"
+    environment:
+      - BEADS_DOLT_PASSWORD=${BEADS_DOLT_PASSWORD}
+      - FILE_ATTACHMENT_BASE_URL=${FILE_ATTACHMENT_BASE_URL}
