@@ -1,6 +1,7 @@
 import { runBdJson } from './bd.js';
 import {
   isDoltPoolReady,
+  enrichListItems,
   queryAllIssues,
   queryBlockedIssues,
   queryEpics,
@@ -136,10 +137,13 @@ export function normalizeIssueList(value) {
  * @returns {Promise<FetchListResultSuccess | FetchListResultFailure>}
  */
 export async function fetchListForSubscription(spec, options = {}) {
+  /** @type {FetchListResultSuccess | FetchListResultFailure} */
+  let result;
+
   if (isDoltPoolReady()) {
     log('using SQL fast path for %s', spec.type);
     try {
-      return await fetchViaSQL(spec);
+      result = await fetchViaSQL(spec);
     } catch (err) {
       log('SQL fast path failed for %s: %o', spec.type, err);
       // Don't fall back to bd CLI — sql-server holds the lock
@@ -151,10 +155,21 @@ export async function fetchListForSubscription(spec, options = {}) {
         }
       };
     }
+  } else {
+    log('using bd CLI fallback for %s', spec.type);
+    result = await fetchViaBdCli(spec, options);
   }
 
-  log('using bd CLI fallback for %s', spec.type);
-  return fetchViaBdCli(spec, options);
+  // Enrich items regardless of which path produced them
+  if (result.ok && result.items.length > 0) {
+    try {
+      result = { ...result, items: await enrichListItems(result.items) };
+    } catch (err) {
+      log('enrichListItems failed for %s: %o', spec.type, err);
+    }
+  }
+
+  return result;
 }
 
 /**
@@ -235,7 +250,10 @@ async function fetchViaSQL(spec) {
    * @param {{ ok: true, items: any[], total: number }} res
    * @returns {FetchListResultSuccess}
    */
-  const withTotal = (res) => ({ ok: true, items: normalizeIssueList(res.items), total: res.total });
+  const withTotal = (res) => {
+    const items = normalizeIssueList(res.items);
+    return { ok: true, items, total: res.total };
+  };
 
   /** @param {() => Promise<any>} queryFn */
   const run = async (queryFn) => {
