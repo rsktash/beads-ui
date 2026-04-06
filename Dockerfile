@@ -1,11 +1,11 @@
-FROM node:22-slim AS build
+FROM node:22-trixie-slim AS build
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 COPY client/ client/
 RUN npm run build
 
-FROM node:22-slim
+FROM node:22-trixie-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git libicu74 \
     && rm -rf /var/lib/apt/lists/*
