@@ -5,7 +5,7 @@ import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
-import { authMiddleware, isAuthEnabled, loadUsers, login } from './auth.js';
+import { authMiddleware, isAuthEnabled, loadUsers, login, verifyToken } from './auth.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
@@ -63,7 +63,9 @@ export function createApp(config) {
       res.json({ ok: true, authEnabled: false });
       return;
     }
-    const user = /** @type {any} */ (req).user;
+    const authHeader = req.headers.authorization;
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : null;
+    const user = token ? verifyToken(token) : null;
     if (!user) {
       res.status(401).json({ ok: false, error: 'Unauthorized' });
       return;
