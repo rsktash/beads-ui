@@ -9,6 +9,7 @@ import type {
   Issue,
   Comment,
 } from "./types";
+import { getToken } from "./auth";
 
 type PushHandler = (event: PushEvent) => void;
 type ConnectionHandler = (connected: boolean) => void;
@@ -39,7 +40,9 @@ export class WsClient {
 
   connect(): void {
     if (this.disposed) return;
-    this.ws = new WebSocket(this.url);
+    const token = getToken();
+    const url = token ? `${this.url}?token=${encodeURIComponent(token)}` : this.url;
+    this.ws = new WebSocket(url);
     this.ws.onopen = () => {
       this.reconnectDelay = 500;
       // Flush queued messages

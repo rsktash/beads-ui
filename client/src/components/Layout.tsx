@@ -1,4 +1,5 @@
 import { useState, useEffect, type ReactNode } from "react";
+import { useAuth } from "../lib/auth";
 import { useWs } from "../lib/ws-context";
 
 function useRoute(): string {
@@ -82,12 +83,13 @@ export function Layout({
     return () => document.removeEventListener("click", handler);
   }, []);
   const ws = useWs();
+  const { user: authUser, authEnabled, logout } = useAuth();
   const [projectName, setProjectName] = useState("");
-  const [appConfig, setAppConfig] = useState<{ version: string; user: string; role: string }>({ version: "", user: "", role: "" });
+  const [appVersion, setAppVersion] = useState("");
 
   useEffect(() => {
     fetch("/api/config").then(r => r.json()).then(data => {
-      setAppConfig({ version: data.version || "", user: data.user || "", role: data.role || "" });
+      setAppVersion(data.version || "");
     }).catch(() => {});
   }, []);
 
@@ -174,14 +176,14 @@ export function Layout({
         <div className="flex-1" />
 
         {/* Version */}
-        {appConfig.version && (
+        {appVersion && (
           <div className="px-4 pb-2 text-center">
-            <span style={{ fontSize: "10px", color: "var(--text-tertiary)" }}>v{appConfig.version}</span>
+            <span style={{ fontSize: "10px", color: "var(--text-tertiary)" }}>v{appVersion}</span>
           </div>
         )}
 
         {/* User card */}
-        {appConfig.user && (
+        {authUser && (
           <div
             className="mx-3 mb-3 px-3 py-2.5 rounded-md flex items-center gap-2.5"
             style={{
@@ -197,12 +199,28 @@ export function Layout({
                 color: "white",
               }}
             >
-              {appConfig.user.charAt(0).toUpperCase()}
+              {authUser.username.charAt(0).toUpperCase()}
             </div>
-            <div>
-              <div className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{appConfig.user}</div>
-              {appConfig.role && <div style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>{appConfig.role}</div>}
+            <div className="flex-1 min-w-0">
+              <div className="text-sm font-medium" style={{ color: "var(--text-primary)" }}>{authUser.username}</div>
+              {authUser.role && <div style={{ fontSize: "11px", color: "var(--text-tertiary)" }}>{authUser.role}</div>}
             </div>
+            {authEnabled && (
+              <button
+                onClick={logout}
+                className="shrink-0 p-1 rounded transition-colors"
+                style={{ color: "var(--text-tertiary)" }}
+                onMouseEnter={(e) => e.currentTarget.style.color = "var(--text-primary)"}
+                onMouseLeave={(e) => e.currentTarget.style.color = "var(--text-tertiary)"}
+                title="Sign out"
+              >
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M6 2H3a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3" />
+                  <path d="M11 11l3-3-3-3" />
+                  <line x1="6" y1="8" x2="14" y2="8" />
+                </svg>
+              </button>
+            )}
           </div>
         )}
       </nav>

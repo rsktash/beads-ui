@@ -1,11 +1,27 @@
+import { AuthProvider, useAuth } from "./lib/auth";
 import { WsProvider } from "./lib/ws-context";
 import { Layout } from "./components/Layout";
+import { Login } from "./components/Login";
 import { Board } from "./views/Board";
 import { List } from "./views/List";
 import { Detail } from "./views/Detail";
 import { SearchDialog } from "./components/SearchDialog";
 
-export function App() {
+function Main() {
+  const { loading, authEnabled, token } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center" style={{ background: "var(--bg-base)" }}>
+        <div className="text-sm" style={{ color: "var(--text-tertiary)" }}>Loading...</div>
+      </div>
+    );
+  }
+
+  if (authEnabled && !token) {
+    return <Login />;
+  }
+
   return (
     <WsProvider>
       <SearchDialog />
@@ -26,5 +42,13 @@ export function App() {
         }}
       </Layout>
     </WsProvider>
+  );
+}
+
+export function App() {
+  return (
+    <AuthProvider>
+      <Main />
+    </AuthProvider>
   );
 }

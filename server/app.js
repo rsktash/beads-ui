@@ -5,6 +5,7 @@ import express from 'express';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createRequire } from 'node:module';
+import { authMiddleware, isAuthEnabled, loadUsers, login } from './auth.js';
 
 const require = createRequire(import.meta.url);
 const pkg = require('../package.json');
@@ -38,6 +39,38 @@ export function createApp(config) {
   // Enable JSON body parsing for API endpoints
   app.use(express.json());
 
+  // Load users and apply auth middleware
+  loadUsers();
+  app.use(authMiddleware);
+
+  // Auth endpoints
+  app.post('/api/auth/login', (req, res) => {
+    const { username, password } = req.body || {};
+    if (!username || !password) {
+      res.status(400).json({ ok: false, error: 'Username and password required' });
+      return;
+    }
+    const result = login(username, password);
+    if (!result.ok) {
+      res.status(401).json(result);
+      return;
+    }
+    res.json(result);
+  });
+
+  app.get('/api/auth/me', (req, res) => {
+    if (!isAuthEnabled()) {
+      res.json({ ok: true, authEnabled: false });
+      return;
+    }
+    const user = /** @type {any} */ (req).user;
+    if (!user) {
+      res.status(401).json({ ok: false, error: 'Unauthorized' });
+      return;
+    }
+    res.json({ ok: true, authEnabled: true, user });
+  });
+
   // Register workspace endpoint - allows CLI to register workspaces dynamically
   // when the server is already running
   /**
@@ -69,8 +102,7 @@ export function createApp(config) {
     res.status(200).json({
       ok: true,
       version: pkg.version,
-      user: process.env.BEADS_UI_USER || '',
-      role: process.env.BEADS_UI_ROLE || '',
+      authEnabled: isAuthEnabled(),
       fileAttachmentBaseUrl: (process.env.FILE_ATTACHMENT_BASE_URL || '').replace(/\/$/, '')
     });
   });

@@ -6,6 +6,7 @@
 import path from 'node:path';
 import { WebSocketServer } from 'ws';
 import { isRequest, makeError, makeOk } from '../app/protocol.js';
+import { isAuthEnabled, verifyToken } from './auth.js';
 import { getGitUserName, runBd, runBdJson } from './bd.js';
 import { resolveWorkspaceDatabase } from './db.js';
 import {
@@ -509,7 +510,17 @@ export function attachWsServer(http_server, options = {}) {
     }
   }
 
-  const wss = new WebSocketServer({ server: http_server, path: ws_path });
+  const wss = new WebSocketServer({
+    server: http_server,
+    path: ws_path,
+    verifyClient: (info, cb) => {
+      if (!isAuthEnabled()) return cb(true);
+      const url = new URL(info.req.url, 'http://localhost');
+      const token = url.searchParams.get('token');
+      if (token && verifyToken(token)) return cb(true);
+      cb(false, 401, 'Unauthorized');
+    }
+  });
   CURRENT_WSS = wss;
 
   // Heartbeat: track if client answered the last ping
