@@ -302,15 +302,15 @@ export function Detail({ issueId }: { issueId: string }) {
       <div className="flex-1 overflow-y-auto p-6 space-y-5">
         {/* Breadcrumbs */}
         <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
-          <a
-            href="/list"
-            className="flex items-center gap-1 transition-colors"
-            style={{ color: "var(--text-tertiary)" }}
+          <button
+            onClick={() => window.history.length > 1 ? window.history.back() : navigate("/board")}
+            className="flex items-center gap-1 transition-colors bg-transparent border-none cursor-pointer p-0"
+            style={{ color: "var(--text-tertiary)", font: "inherit" }}
             onMouseEnter={(e) => { e.currentTarget.style.color = "var(--accent)"; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = "var(--text-tertiary)"; }}
           >
-            &larr; List
-          </a>
+            &larr; Back
+          </button>
           <span>/</span>
           <CopyId id={issue.id} />
         </div>
