@@ -89,24 +89,40 @@ function buildPagination(pagination) {
  */
 export async function enrichListItems(items) {
   const pool = getPool();
-  if (!pool || items.length === 0) return items;
+  if (!pool || items.length === 0) {
+    log('enrichListItems skip: pool=%s items=%d', !!pool, items.length);
+    return items;
+  }
 
-  const ids = items.map(i => i.id);
+  const ids = items.map(i => String(i.id));
+  log('enrichListItems: enriching %d items', ids.length);
 
   try {
-    // Batch: resolve parent IDs from dependencies table
+    // 1. Resolve parent IDs — use the `parent` field already present from the
+    //    LEFT JOIN in query functions, falling back to a dependencies lookup.
     /** @type {Map<string, string>} */
     const parentIdMap = new Map();
-    const [parentDepRows] = await pool.query(
-      `SELECT issue_id, depends_on_id FROM dependencies
-       WHERE type = 'parent-child' AND issue_id IN (${ids.map(() => '?').join(',')})`,
-      ids
-    );
-    for (const r of /** @type {any[]} */ (parentDepRows)) {
-      parentIdMap.set(r.issue_id, r.depends_on_id);
+    for (const item of items) {
+      const p = item.parent ?? item.parent_id;
+      if (p && typeof p === 'string' && p.length > 0) {
+        parentIdMap.set(String(item.id), p);
+      }
     }
 
-    // Batch: parent titles
+    // If items didn't carry a `parent` column, query dependencies table
+    if (parentIdMap.size === 0 && ids.length > 0) {
+      const [parentDepRows] = await pool.query(
+        `SELECT issue_id, depends_on_id FROM dependencies
+         WHERE type = 'parent-child' AND issue_id IN (${ids.map(() => '?').join(',')})`,
+        ids
+      );
+      for (const r of /** @type {any[]} */ (parentDepRows)) {
+        parentIdMap.set(r.issue_id, r.depends_on_id);
+      }
+    }
+    log('enrichListItems: %d parent mappings found', parentIdMap.size);
+
+    // 2. Batch parent titles
     const parentIds = [...new Set(parentIdMap.values())];
     /** @type {Map<string, string>} */
     const parentTitles = new Map();
@@ -118,49 +134,56 @@ export async function enrichListItems(items) {
       for (const r of /** @type {any[]} */ (rows)) parentTitles.set(r.id, r.title);
     }
 
-    // Batch: children counts
-    const [childRows] = await pool.query(
-      `SELECT depends_on_id AS pid, COUNT(*) AS total,
-              SUM(CASE WHEN i.status = 'closed' THEN 1 ELSE 0 END) AS closed
-       FROM dependencies d JOIN issues i ON i.id = d.issue_id
-       WHERE d.type = 'parent-child' AND d.depends_on_id IN (${ids.map(() => '?').join(',')})
-       GROUP BY d.depends_on_id`,
-      ids
-    );
+    // 3. Batch children counts
     /** @type {Map<string, { total: number, closed: number }>} */
     const childCounts = new Map();
-    for (const r of /** @type {any[]} */ (childRows)) {
-      childCounts.set(r.pid, { total: Number(r.total), closed: Number(r.closed) });
+    if (ids.length > 0) {
+      const [childRows] = await pool.query(
+        `SELECT depends_on_id AS pid, COUNT(*) AS total,
+                SUM(CASE WHEN i.status = 'closed' THEN 1 ELSE 0 END) AS closed
+         FROM dependencies d JOIN issues i ON i.id = d.issue_id
+         WHERE d.type = 'parent-child' AND d.depends_on_id IN (${ids.map(() => '?').join(',')})
+         GROUP BY d.depends_on_id`,
+        ids
+      );
+      for (const r of /** @type {any[]} */ (childRows)) {
+        childCounts.set(r.pid, { total: Number(r.total), closed: Number(r.closed) });
+      }
     }
+    log('enrichListItems: %d items have children', childCounts.size);
 
-    // Batch: blocked by (issues that block each item)
-    const [blockRows] = await pool.query(
-      `SELECT d.issue_id, d.depends_on_id, i.title AS blocker_title
-       FROM dependencies d JOIN issues i ON i.id = d.depends_on_id
-       WHERE d.type = 'blocks' AND d.issue_id IN (${ids.map(() => '?').join(',')})
-         AND i.status != 'closed'`,
-      ids
-    );
+    // 4. Batch blocked-by (open issues that block each item)
     /** @type {Map<string, Array<{ id: string, title: string }>>} */
     const blockedBy = new Map();
-    for (const r of /** @type {any[]} */ (blockRows)) {
-      if (!blockedBy.has(r.issue_id)) blockedBy.set(r.issue_id, []);
-      blockedBy.get(r.issue_id).push({ id: r.depends_on_id, title: r.blocker_title });
+    if (ids.length > 0) {
+      const [blockRows] = await pool.query(
+        `SELECT d.issue_id, d.depends_on_id, i.title AS blocker_title
+         FROM dependencies d JOIN issues i ON i.id = d.depends_on_id
+         WHERE d.type = 'blocks' AND d.issue_id IN (${ids.map(() => '?').join(',')})
+           AND i.status != 'closed'`,
+        ids
+      );
+      for (const r of /** @type {any[]} */ (blockRows)) {
+        if (!blockedBy.has(r.issue_id)) blockedBy.set(r.issue_id, []);
+        blockedBy.get(r.issue_id).push({ id: r.depends_on_id, title: r.blocker_title });
+      }
     }
+    log('enrichListItems: %d items have blockers', blockedBy.size);
 
     return items.map(item => {
+      const id = String(item.id);
       const enriched = { ...item };
-      const pid = parentIdMap.get(/** @type {string} */ (enriched.id));
+      const pid = parentIdMap.get(id);
       if (pid) {
         enriched.parent_id = pid;
         if (parentTitles.has(pid)) enriched.parent_title = parentTitles.get(pid);
       }
-      const cc = childCounts.get(/** @type {string} */ (enriched.id));
+      const cc = childCounts.get(id);
       if (cc) {
         enriched.total_children = cc.total;
         enriched.closed_children = cc.closed;
       }
-      const bb = blockedBy.get(/** @type {string} */ (enriched.id));
+      const bb = blockedBy.get(id);
       if (bb && bb.length > 0) {
         enriched.blocked_by = bb;
       }
