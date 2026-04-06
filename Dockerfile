@@ -7,7 +7,7 @@ RUN npm run build
 
 FROM node:20-slim
 
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git \
+RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates git libicu72 \
     && rm -rf /var/lib/apt/lists/*
 
 ARG BD_VERSION=1.0.0
