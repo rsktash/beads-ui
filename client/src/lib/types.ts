@@ -27,6 +27,7 @@ export interface Issue {
   parent_title?: string;
   parent_status?: string;
   parent_type?: string;
+  blocked_by?: Array<{ id: string; title: string }>;
 }
 
 export interface Comment {

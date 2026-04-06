@@ -231,14 +231,48 @@ function IssueRow({
       <span className="w-12 shrink-0">
         <PriorityBadge priority={issue.priority} />
       </span>
-      <span className="flex-1 text-left truncate" style={{ color: "var(--text-primary)" }}>
-        {issue.title}
-        {issue.issue_type === "epic" && issue.total_children != null && (
+      <span className="flex-1 text-left min-w-0" style={{ color: "var(--text-primary)" }}>
+        {issue.parent_id && issue.parent_title && (
           <span
-            className="ml-2 text-xs px-1.5 py-0.5 rounded"
-            style={{ background: "rgba(0,0,0,0.04)", color: "var(--text-tertiary)" }}
+            className="block text-[10px] truncate mb-0.5"
+            style={{ color: "var(--text-tertiary)" }}
+            title={`${issue.parent_id}: ${issue.parent_title}`}
           >
-            {issue.total_children} sub
+            <span style={{ opacity: 0.6 }}>{issue.parent_id}</span>{" "}
+            {issue.parent_title}
+          </span>
+        )}
+        <span className="truncate block">
+          {issue.title}
+          {issue.total_children != null && issue.total_children > 0 && (
+            <span
+              className="ml-2 text-[10px] px-1.5 py-0.5 rounded"
+              style={{ background: "rgba(0,0,0,0.04)", color: "var(--text-tertiary)" }}
+              title={`${issue.closed_children ?? 0}/${issue.total_children} closed`}
+            >
+              {issue.closed_children ?? 0}/{issue.total_children}
+            </span>
+          )}
+        </span>
+        {issue.blocked_by && issue.blocked_by.length > 0 && (
+          <span className="flex items-center gap-1 mt-0.5">
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none" style={{ color: "var(--status-blocked)", flexShrink: 0 }}>
+              <circle cx="8" cy="8" r="7" stroke="currentColor" strokeWidth="1.5" />
+              <line x1="4" y1="8" x2="12" y2="8" stroke="currentColor" strokeWidth="1.5" />
+            </svg>
+            {issue.blocked_by.map((b) => (
+              <span
+                key={b.id}
+                className="text-[10px] px-1 py-0 rounded"
+                style={{
+                  background: "rgba(220,50,47,0.08)",
+                  color: "var(--status-blocked)",
+                }}
+                title={b.title}
+              >
+                {b.id}
+              </span>
+            ))}
           </span>
         )}
       </span>
