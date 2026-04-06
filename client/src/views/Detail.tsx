@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSubscription } from "../hooks/use-subscription";
 import { useMutation } from "../hooks/use-mutation";
 import { StatusBadge } from "../components/StatusBadge";
@@ -9,6 +9,7 @@ import { getInitials, getAvatarColor } from "../lib/avatar";
 import type { Issue } from "../lib/types";
 import { CopyId } from "../components/CopyId";
 import { navigate } from "../components/Layout";
+import { TableOfContents } from "../components/TableOfContents";
 
 function MetadataCard({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -279,6 +280,7 @@ export function Detail({ issueId }: { issueId: string }) {
   const { issues, loading } = useSubscription("issue-detail", { id: issueId });
   const mutations = useMutation();
   const issue = issues[0];
+  const scrollRef = useRef<HTMLDivElement>(null);
 
   // Scroll to fragment after content renders
   useEffect(() => {
@@ -299,7 +301,10 @@ export function Detail({ issueId }: { issueId: string }) {
 
   return (
     <div className="flex h-full" style={{ background: "var(--bg-base)" }}>
-      <div className="flex-1 overflow-y-auto p-6 space-y-5">
+      <div className="shrink-0 p-6 pr-0 hidden xl:block">
+        <TableOfContents issue={issue} scrollContainer={scrollRef.current} />
+      </div>
+      <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-5">
         {/* Breadcrumbs */}
         <div className="flex items-center gap-2 text-sm" style={{ color: "var(--text-tertiary)" }}>
           <button
