@@ -19,6 +19,7 @@ COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 COPY bin/ bin/
 COPY server/ server/
+COPY app/ app/
 COPY --from=build /app/dist/ dist/
 
 WORKDIR /workspace
