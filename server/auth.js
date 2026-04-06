@@ -105,7 +105,7 @@ export function authMiddleware(req, res, next) {
   if (!isAuthEnabled()) return next();
 
   // Allow auth endpoints and health check
-  if (req.path.startsWith('/api/auth') || req.path === '/healthz') return next();
+  if (req.path.startsWith('/api/auth') || req.path === '/healthz' || req.path === '/api/config') return next();
 
   // Allow static assets and SPA routes (auth enforced client-side)
   const ext = req.path.split('.').pop();
