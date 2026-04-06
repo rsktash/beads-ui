@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSubscription } from "../hooks/use-subscription";
 import { useMutation } from "../hooks/use-mutation";
 import { StatusBadge } from "../components/StatusBadge";
@@ -278,6 +278,19 @@ export function Detail({ issueId }: { issueId: string }) {
   const { issues, loading } = useSubscription("issue-detail", { id: issueId });
   const mutations = useMutation();
   const issue = issues[0];
+
+  // Scroll to fragment after content renders
+  useEffect(() => {
+    if (!issue) return;
+    const hash = window.location.hash.slice(1);
+    if (!hash) return;
+    // Delay to allow markdown async rendering to complete
+    const timer = setTimeout(() => {
+      const el = document.getElementById(hash);
+      if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [issue]);
 
   if (loading) return <div className="p-6" style={{ color: "var(--text-tertiary)" }}>Loading...</div>;
   if (!issue)
