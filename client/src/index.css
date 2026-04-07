@@ -129,6 +129,42 @@
   transition: opacity 120ms ease;
 }
 
+/* Markdown task-list checkboxes */
+.prose input[type="checkbox"] {
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border: 2px solid var(--status-blocked);
+  border-radius: 4px;
+  vertical-align: middle;
+  margin-right: 6px;
+  cursor: default;
+  position: relative;
+  background: rgba(220,50,47,0.08);
+}
+
+.prose input[type="checkbox"]:checked {
+  background: var(--status-closed);
+  border-color: var(--status-closed);
+}
+
+.prose input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 6px;
+  height: 10px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.prose ul:has(input[type="checkbox"]) {
+  list-style: none;
+  padding-left: 0;
+}
+
 .issue-card:hover .issue-card__handle {
   opacity: 0.6;
 }

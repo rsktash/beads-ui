@@ -298,8 +298,8 @@ export function Markdown({ content }: { content: string }) {
       );
 
       const sanitized = DOMPurify.sanitize(rendered, {
-        ADD_TAGS: ["span"],
-        ADD_ATTR: ["style", "class", "id"],
+        ADD_TAGS: ["span", "input"],
+        ADD_ATTR: ["style", "class", "id", "type", "checked", "disabled"],
       });
 
       if (!cancelled) setHtml(sanitized);
