@@ -66,7 +66,7 @@ fi
 ISSUES=()
 while IFS= read -r id; do
   [ -n "$id" ] && ISSUES+=("$id")
-done < <(bd list "${BD_ARGS[@]}" --flat --json 2>/dev/null | jq -r '.[].id')
+done < <(bd list ${BD_ARGS[@]+"${BD_ARGS[@]}"} --flat --json 2>/dev/null | jq -r '.[].id')
 
 if [ ${#ISSUES[@]} -eq 0 ]; then
   echo "No issues found matching filters" >&2

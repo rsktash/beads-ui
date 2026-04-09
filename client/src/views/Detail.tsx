@@ -71,6 +71,14 @@ function MetadataSidebar({
         </select>
       </MetadataCard>
 
+      {issue.status === "closed" && issue.close_reason && (
+        <MetadataCard label="Close Reason">
+          <p className="text-sm" style={{ color: "var(--text-secondary)" }}>
+            {issue.close_reason}
+          </p>
+        </MetadataCard>
+      )}
+
       <MetadataCard label="Priority">
         <select
           value={issue.priority}

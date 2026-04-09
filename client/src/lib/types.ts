@@ -11,6 +11,7 @@ export interface Issue {
   created_at: string | number;
   updated_at: string | number;
   closed_at?: string | number | null;
+  close_reason?: string;
   labels?: string[];
   // Epic fields
   total_children?: number;
