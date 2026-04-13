@@ -62,17 +62,6 @@ if [ -z "$PATTERN" ]; then
   exit 1
 fi
 
-# Use bd list for issue discovery (all bd flags pass through)
-ISSUES=()
-while IFS= read -r id; do
-  [ -n "$id" ] && ISSUES+=("$id")
-done < <(bd list ${BD_ARGS[@]+"${BD_ARGS[@]}"} --flat --json 2>/dev/null | jq -r '.[].id')
-
-if [ ${#ISSUES[@]} -eq 0 ]; then
-  echo "No issues found matching filters" >&2
-  exit 1
-fi
-
 IFS=',' read -ra FIELD_ARRAY <<< "$FIELDS"
 
 grep_flags="-n"
@@ -80,27 +69,53 @@ grep_flags="-n"
 [ "$AFTER" -gt 0 ] && grep_flags="$grep_flags -A $AFTER"
 [ "$BEFORE" -gt 0 ] && grep_flags="$grep_flags -B $BEFORE"
 
+# Extract a literal prefix from the pattern for server-side pre-filtering.
+# Strip leading ^ then take chars before the first regex metachar.
+literal=$(printf '%s' "$PATTERN" | sed 's/^\^//' | sed 's/[[\\.+*?{}()|^$].*//')
+
+# Step 1: Fast issue discovery with server-side pre-filter when possible
+list_args=(${BD_ARGS[@]+"${BD_ARGS[@]}"} --flat --json)
+
+# Use --desc-contains for server-side pre-filter when searching description
+# and we have a usable literal substring (at least 2 chars)
+if [[ ${#FIELD_ARRAY[@]} -eq 1 && "${FIELD_ARRAY[0]}" == "description" && ${#literal} -ge 2 ]]; then
+  list_args+=(--desc-contains "$literal")
+fi
+
+# Step 2: Single bd list call with pre-filter → jq extracts fields → grep matches
+jq_fields_expr=""
+for field in "${FIELD_ARRAY[@]}"; do
+  jq_fields_expr="$jq_fields_expr \"$field\","
+done
+jq_fields_expr="[${jq_fields_expr%,}]"
+
 found=false
 
-for issue_id in "${ISSUES[@]}"; do
-  json=$(bd show "$issue_id" --json 2>/dev/null) || continue
+while IFS= read -r -d '' record; do
+  issue_id=$(printf '%s' "$record" | head -1)
+  field=$(printf '%s' "$record" | sed -n '2p')
+  content=$(printf '%s' "$record" | tail -n +3)
 
-  for field in "${FIELD_ARRAY[@]}"; do
-    content=$(echo "$json" | jq -r ".[0].${field} // empty")
-    [ -z "$content" ] && continue
+  matches=$(printf '%s' "$content" | grep $grep_flags -- "$PATTERN" 2>/dev/null) || continue
+  found=true
 
-    matches=$(echo "$content" | grep $grep_flags -- "$PATTERN" 2>/dev/null) || continue
-    found=true
+  if [ "$LIST_ONLY" = true ]; then
+    echo "$issue_id"
+    continue
+  fi
 
-    if [ "$LIST_ONLY" = true ]; then
-      echo "$issue_id"
-      continue 2
-    fi
+  while IFS= read -r line; do
+    echo "$issue_id:$field:$line"
+  done <<< "$matches"
+done < <(bd list "${list_args[@]}" 2>/dev/null \
+  | jq -j --argjson fields "$jq_fields_expr" '
+    .[] | . as $issue |
+    $fields[] | . as $field |
+    ($issue[$field] // "") | select(length > 0) |
+    ($issue.id + "\n" + $field + "\n" + . + "\u0000")
+  ')
 
-    while IFS= read -r line; do
-      echo "$issue_id:$field:$line"
-    done <<< "$matches"
-  done
-done
-
-$found || exit 1
+if [ "$found" = false ]; then
+  echo "No matches found" >&2
+  exit 1
+fi
