@@ -227,7 +227,7 @@ function CommentItem({ comment }: { comment: Comment }) {
   const author = comment.author || "anonymous";
   const initials = getInitials(author);
   const color = getAvatarColor(author);
-  const when = new Date(comment.created_at * 1000).toLocaleString();
+  const when = new Date(comment.created_at).toLocaleString();
   return (
     <div className="flex gap-3">
       <div

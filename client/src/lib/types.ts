@@ -36,8 +36,8 @@ export interface Comment {
   issue_id: string;
   author: string;
   text: string;
-  created_at: number;
-  updated_at: number;
+  created_at: string | number;
+  updated_at: string | number;
 }
 
 // Subscription types
