@@ -6,10 +6,11 @@ import { PriorityBadge } from "../components/PriorityBadge";
 import { TypeBadge } from "../components/TypeBadge";
 import { SectionEditor } from "../components/SectionEditor";
 import { getInitials, getAvatarColor } from "../lib/avatar";
-import type { Issue } from "../lib/types";
+import type { Issue, Comment } from "../lib/types";
 import { CopyId } from "../components/CopyId";
 import { navigate } from "../components/Layout";
 import { TableOfContents } from "../components/TableOfContents";
+import { Markdown } from "../components/Markdown";
 
 function MetadataCard({ label, children }: { label: string; children: React.ReactNode }) {
   return (
@@ -222,7 +223,36 @@ function MetadataSidebar({
   );
 }
 
-function CommentsSection({ issueId }: { issueId: string }) {
+function CommentItem({ comment }: { comment: Comment }) {
+  const author = comment.author || "anonymous";
+  const initials = getInitials(author);
+  const color = getAvatarColor(author);
+  const when = new Date(comment.created_at * 1000).toLocaleString();
+  return (
+    <div className="flex gap-3">
+      <div
+        className="flex-shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold text-white"
+        style={{ background: color }}
+        title={author}
+      >
+        {initials}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-baseline gap-2">
+          <span className="text-sm font-semibold" style={{ color: "var(--text-primary)" }}>
+            {author}
+          </span>
+          <span className="text-xs" style={{ color: "var(--text-tertiary)" }}>{when}</span>
+        </div>
+        <div className="mt-0.5">
+          <Markdown content={comment.text} />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CommentsSection({ issueId, comments }: { issueId: string; comments: Comment[] }) {
   const mutations = useMutation();
   const [newComment, setNewComment] = useState("");
 
@@ -245,8 +275,15 @@ function CommentsSection({ issueId }: { issueId: string }) {
         className="font-semibold uppercase tracking-wider mb-3"
         style={{ fontSize: "11px", color: "var(--text-tertiary)" }}
       >
-        Comments
+        Comments {comments.length > 0 && <span style={{ color: "var(--text-secondary)" }}>({comments.length})</span>}
       </h3>
+      {comments.length > 0 && (
+        <div className="flex flex-col gap-4 mb-4">
+          {comments.map((c) => (
+            <CommentItem key={c.id} comment={c} />
+          ))}
+        </div>
+      )}
       <div className="flex gap-2">
         <textarea
           value={newComment}
@@ -416,7 +453,7 @@ export function Detail({ issueId }: { issueId: string }) {
         )}
 
         {/* Comments */}
-        <CommentsSection issueId={issue.id} />
+        <CommentsSection issueId={issue.id} comments={issue.comments ?? []} />
       </div>
 
       {/* Metadata sidebar */}

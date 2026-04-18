@@ -512,11 +512,14 @@ export async function queryIssueDetail(id) {
       issue.closed_children = children.filter((c) => c.status === 'closed').length;
     }
 
-    // Fetch comment count
+    // Fetch comments
     const [commentRows] = await pool.query(
-      `SELECT COUNT(*) as cnt FROM comments WHERE issue_id = ?`, [id]
+      `SELECT id, issue_id, author, text, created_at FROM comments
+       WHERE issue_id = ? ORDER BY created_at ASC`, [id]
     );
-    issue.comment_count = /** @type {any[]} */ (commentRows)[0]?.cnt || 0;
+    const comments = /** @type {any[]} */ (commentRows).map(normalizeRow);
+    issue.comments = comments;
+    issue.comment_count = comments.length;
 
     return { ok: true, item: issue };
   } catch (err) {

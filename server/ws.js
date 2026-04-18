@@ -1178,6 +1178,7 @@ export async function handleMessage(ws, data) {
         return;
       }
       ws.send(JSON.stringify(makeOk(req, res.items)));
+      try { triggerMutationRefreshOnce(); } catch { /* ignore */ }
     } else {
       const args = ['comment', id, text.trim()];
       if (author) {
@@ -1196,6 +1197,7 @@ export async function handleMessage(ws, data) {
         return;
       }
       ws.send(JSON.stringify(makeOk(req, comments.stdoutJson || [])));
+      try { triggerMutationRefreshOnce(); } catch { /* ignore */ }
     }
     return;
   }

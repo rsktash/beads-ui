@@ -344,7 +344,15 @@ async function fetchViaBdCli(spec, options) {
     let items = normalizeIssueList(raw);
     if (String(spec.type) === 'issue-detail') {
       items = await Promise.all(
-        items.map((item) => enrichIssueDetailParentContext(item, options))
+        items.map(async (item) => {
+          const enriched = await enrichIssueDetailParentContext(item, options);
+          const cRes = await runBdJson(['comments', String(item.id), '--json'], { cwd: options.cwd });
+          if (cRes && cRes.code === 0 && Array.isArray(cRes.stdoutJson)) {
+            enriched.comments = cRes.stdoutJson;
+            enriched.comment_count = cRes.stdoutJson.length;
+          }
+          return enriched;
+        })
       );
     }
     return { ok: true, items };
