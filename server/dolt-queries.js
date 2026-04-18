@@ -170,6 +170,22 @@ export async function enrichListItems(items) {
     }
     log('enrichListItems: %d items have blockers', blockedBy.size);
 
+    // 5. Batch comment counts
+    /** @type {Map<string, number>} */
+    const commentCounts = new Map();
+    if (ids.length > 0) {
+      const [commentRows] = await pool.query(
+        `SELECT issue_id, COUNT(*) AS cnt FROM comments
+         WHERE issue_id IN (${ids.map(() => '?').join(',')})
+         GROUP BY issue_id`,
+        ids
+      );
+      for (const r of /** @type {any[]} */ (commentRows)) {
+        commentCounts.set(r.issue_id, Number(r.cnt));
+      }
+    }
+    log('enrichListItems: %d items have comments', commentCounts.size);
+
     return items.map(item => {
       const id = String(item.id);
       const enriched = { ...item };
@@ -187,6 +203,7 @@ export async function enrichListItems(items) {
       if (bb && bb.length > 0) {
         enriched.blocked_by = bb;
       }
+      enriched.comment_count = commentCounts.get(id) || 0;
       return enriched;
     });
   } catch (err) {

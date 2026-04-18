@@ -244,11 +244,27 @@ function IssueRow({
         {issue.title}
         {issue.total_children != null && issue.total_children > 0 && (
           <span
-            className="ml-2 text-[10px] px-1.5 py-0.5 rounded"
+            className="ml-2 text-[10px] px-1.5 py-0.5 rounded inline-flex items-center gap-1 align-middle"
             style={{ background: "rgba(0,0,0,0.04)", color: "var(--text-tertiary)" }}
-            title={`${issue.closed_children ?? 0}/${issue.total_children} closed`}
+            title={`${issue.closed_children ?? 0}/${issue.total_children} child issues closed`}
           >
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" strokeWidth="1.5" />
+              <path d="M5 8.5L7 10.5L11 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
             {issue.closed_children ?? 0}/{issue.total_children}
+          </span>
+        )}
+        {issue.comment_count != null && issue.comment_count > 0 && (
+          <span
+            className="ml-1.5 text-[10px] px-1.5 py-0.5 rounded inline-flex items-center gap-1 align-middle"
+            style={{ background: "rgba(0,0,0,0.04)", color: "var(--text-tertiary)" }}
+            title={`${issue.comment_count} comment${issue.comment_count === 1 ? "" : "s"}`}
+          >
+            <svg width="10" height="10" viewBox="0 0 16 16" fill="none">
+              <path d="M2.5 4a1.5 1.5 0 0 1 1.5-1.5h8A1.5 1.5 0 0 1 13.5 4v5a1.5 1.5 0 0 1-1.5 1.5H6.5L4 13v-2.5h-.5A1.5 1.5 0 0 1 2 9V4Z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round" />
+            </svg>
+            {issue.comment_count}
           </span>
         )}
         {issue.blocked_by && issue.blocked_by.length > 0 && (
@@ -316,28 +332,25 @@ export function List() {
     return () => clearTimeout(timer);
   }, [search]);
 
-  // Build server-side subscription params
+  // Build server-side subscription params (paginated on the server)
   const subParams = useMemo(() => {
-    const params: Record<string, string | number | boolean> = {};
+    const params: Record<string, string | number | boolean> = {
+      limit: PAGE_SIZE,
+      offset: page * PAGE_SIZE,
+    };
     if (debouncedSearch.trim()) params.q = debouncedSearch.trim();
     if (statusFilter !== "all") params.status = statusFilter;
     if (typeFilter !== "all") params.type = typeFilter;
     return params;
-  }, [debouncedSearch, statusFilter, typeFilter]);
+  }, [debouncedSearch, statusFilter, typeFilter, page]);
 
-  // Server-side search+filter via search-issues subscription
-  const { issues: allFiltered, loading, refreshing, total } = useSubscription(
+  // Server-side search+filter+paginate via search-issues subscription
+  const { issues: paginatedIssues, loading, refreshing, total } = useSubscription(
     "search-issues",
     subParams,
   );
 
   const totalPages = Math.ceil(total / PAGE_SIZE);
-
-  // Client-side pagination of server-filtered results
-  const paginatedIssues = useMemo(() => {
-    const start = page * PAGE_SIZE;
-    return allFiltered.slice(start, start + PAGE_SIZE);
-  }, [allFiltered, page]);
 
   // Reset page when filters change
   useEffect(() => {

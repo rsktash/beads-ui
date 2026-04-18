@@ -24,6 +24,7 @@ export interface Issue {
   dependencies?: Array<{ id: string; title: string; status: string }>;
   dependents?: Array<{ id: string; title: string; status: string }>;
   comments?: Comment[];
+  comment_count?: number;
   parent_id?: string;
   parent_title?: string;
   parent_status?: string;
